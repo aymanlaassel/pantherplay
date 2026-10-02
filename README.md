@@ -34,7 +34,7 @@ Turn "we need 2 more for 5v5 tonight" group chats into a live board students act
 
 ### Setup
 ```bash
-git clone https://github.com/aymanlaassel/pantherplay.git
+git clone https://github.com/aymanlaassel/pantherplay
 cd pantherplay
 ```
 
