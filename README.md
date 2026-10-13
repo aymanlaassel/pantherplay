@@ -21,7 +21,7 @@ Turn "we need 2 more for 5v5 tonight" group chats into a live board students act
 |---|---|
 | Mobile app | React Native + Expo |
 | Backend | Node.js + Express |
-| Database | PostgreSQL on Supabase, via Prisma (users, games, RSVPs) |
+| Database | Supabase (PostgreSQL, accessed with Prisma) for users, games, RSVPs |
 | Auth, real-time sync & notifications | Supabase |
 | Maps & location | Google Maps API or Mapbox |
 
