@@ -21,8 +21,8 @@ Turn "we need 2 more for 5v5 tonight" group chats into a live board students act
 |---|---|
 | Mobile app | React Native + Expo |
 | Backend | Node.js + Express |
-| Database | PostgreSQL or MongoDB (users, games, RSVPs) |
-| Real-time sync & notifications | Firebase or Supabase |
+| Database | PostgreSQL on Supabase, via Prisma (users, games, RSVPs) |
+| Auth, real-time sync & notifications | Supabase |
 | Maps & location | Google Maps API or Mapbox |
 
 ## Getting Started
@@ -30,7 +30,7 @@ Turn "we need 2 more for 5v5 tonight" group chats into a live board students act
 ### Prerequisites
 - [Node.js](https://nodejs.org) (LTS)
 - [Expo Go](https://expo.dev/go) on your phone, or an iOS/Android emulator
-- Access to the project's database and Firebase/Supabase (ask a team lead for keys)
+- Access to the project's Supabase database (ask a team lead for keys)
 
 ### Setup
 ```bash
@@ -43,6 +43,7 @@ cd pantherplay
 cd server
 npm install
 cp .env.example .env   # fill in your values
+npx prisma migrate dev   # sync your database with the schema
 npm start
 ```
 
