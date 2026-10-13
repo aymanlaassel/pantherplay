@@ -1,0 +1,17 @@
+// Prisma schema. Docs: https://pris.ly/d/prisma-schema
+// Connection URLs live in prisma.config.ts (CLI) and src/db.js (runtime).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// Placeholder model so `prisma generate` and the first migration have something to work with.
+// Replace with the real data model (users, games, RSVPs, squads, ratings).
+model HealthCheck {
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now())
+}
