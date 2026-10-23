@@ -8,6 +8,7 @@ export default function DiscoverScreen() {
       {/* TODO: remove test links once Discover has real game cards */}
       <Link href="/game/123">Open game 123</Link>
       <Link href="/notifications">Notifications</Link>
+      <Link href="/theme-preview">Theme preview</Link>
     </View>
   );
 }

@@ -123,7 +123,7 @@ flowchart TB
 | `app/` | The whole phone app (the Expo project), with its own `package.json` and assets. Run `npx expo start` from here. |
 | `app/src/app/` | **Screens.** Each file is one screen, and its path becomes the screen's address: `game/[id].tsx` is the Game detail page for any game id. Folders in parentheses like `(auth)` group screens without changing the address. A `_layout.tsx` file wraps a group (the tab bar, the auth gate). |
 | `app/src/components/` | Reusable building blocks that many screens share (buttons, game cards, chips). Named like the Figma components, so designers and developers mean the same thing. |
-| `app/src/theme/` | Colors, fonts and spacing in one place. Components use names like `text/primary`, never hex codes, so changing a color is one edit. (Not created yet; it replaces the starter template's `src/constants/theme.ts`.) |
+| `app/src/theme/` | Colors, fonts, text styles, spacing and radius in one place, mirroring the Figma variables. Components use names like `colors.text.primary` (Figma `text/primary`), never hex codes, so changing a color is one edit. Light mode only. |
 | `app/src/api/` | The only place screens get data from: small functions like `listGames()` or `joinGame(id)` that call Supabase, so screens never write database queries themselves. |
 | `app/src/lib/supabase.ts` | Creating the one Supabase connection the whole app shares. |
 | `app/src/lib/auth.ts` | Sign in, sign out, and "who is signed in?". The only file that knows Google is involved. |
