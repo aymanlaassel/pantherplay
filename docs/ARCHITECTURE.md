@@ -87,7 +87,7 @@ flowchart TB
 
   Repo --> AppProj["app/<br/>the phone app (Expo project)"]
   Repo --> Supa["supabase/"]
-  Repo --> Docs["docs/<br/>HANDOVER.md, ARCHITECTURE.md, adr/"]
+  Repo --> Docs["docs/<br/>ARCHITECTURE.md, adr/"]
   Repo --> Server["server/<br/>Express + Prisma<br/>(pending: keep or remove)"]
 
   AppProj --> Screens["src/app/<br/>one file = one screen<br/>(Expo Router)"]
@@ -129,7 +129,7 @@ flowchart TB
 | `app/src/lib/auth.ts` | Sign in, sign out, and "who is signed in?". The only file that knows Google is involved. |
 | `supabase/migrations/` | Every database change, as numbered SQL files applied in order. Like git history for the database: anyone can rebuild the same database from scratch. |
 | `supabase/seed.sql` | The starter rows the app needs: the sport list and the campus locations. |
-| `docs/` | This file, the handover, and ADRs (one short file per big decision, explaining why). |
+| `docs/` | This file and ADRs (one short file per big decision, explaining why). |
 | `server/` | An Express + Prisma server from early setup. The team later chose Supabase only, so this may be removed. **Don't build on it yet.** |
 
 ---
@@ -505,4 +505,4 @@ flowchart TB
 - **Who updates it:** whoever changes the thing the diagram shows, in the same PR.
 - **Felipe reviews** diagram changes, the same way he approves new Figma components.
 - When a pending decision is made (Social tab scope, My Games, waitlist), **remove the dashed style** and update the labels.
-- Full context and the reasons behind each decision are in [`docs/HANDOVER.md`](./HANDOVER.md).
+- The reasons behind each big decision are recorded as ADRs in [`docs/adr/`](./adr/).

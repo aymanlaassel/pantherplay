@@ -1,7 +1,3 @@
-# This is the record for how we are going to keep track of architecture decisions,
-# this is good practice for when we plan on handing off software to another company
-# in our case PantherSoft.
-
 # NNNN: Title of the decision
 
 **Date:** YYYY-MM-DD
