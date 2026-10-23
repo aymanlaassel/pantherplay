@@ -24,5 +24,14 @@ A students-only app for organizing pickup sports games at FIU. React Native + Ex
 ## Commands
 Fill these in once the Expo app is scaffolded:
 - Start the app: `npx expo start`
-- Lint / typecheck / test: _TBD_
 - Supabase local: _TBD_
+
+## Checks
+Run from `app/` before every PR; all must pass.
+
+| Check | Command |
+|---|---|
+| Typecheck | `npx tsc --noEmit` |
+| Lint | `npm run lint` |
+| Tests | `npm test` |
+| Smoke test (bundles the app) | `npx expo export --platform ios --output-dir /tmp/export-check` |
