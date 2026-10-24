@@ -6,4 +6,4 @@ The only place screens get data from. Screens call these functions and never tal
 
 - `types.ts`: row types that mirror the tables in `docs/ARCHITECTURE.md` section 5, plus `GameWithDetails` (what screens get).
 - `games.ts`: `listGames()`, `getGame(id)`.
-- `mock-data.ts`: the fake data, including hostile cases (null avatar, long title, long host name, 47 games on one day, full, cancelled, starting in 5 minutes). Call `setMockScenario('empty')` to make `listGames()` return `[]` for the empty state.
+- `mock-data.ts`: the fake data, including hostile cases (null avatar, 60-character notes, long host name, 47 games on one day, full, cancelled, starting in 5 minutes). Call `setMockScenario('empty')` to make `listGames()` return `[]` for the empty state.

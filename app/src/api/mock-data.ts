@@ -49,7 +49,6 @@ function game(
     game: {
       id,
       host_id: 'p-ana',
-      title: 'Pickup soccer',
       sport: 'soccer',
       location_id: 'l-field',
       starts_at: startsAt.toISOString(),
@@ -73,28 +72,27 @@ function buildMockGames(now: Date): MockGame[] {
 
   const named: MockGame[] = [
     // Hostile: starts in 5 minutes.
-    game('g-soon', at(now, 5), { title: 'Quick 5v5 before class', status: 'confirmed' }, 7),
+    game('g-soon', at(now, 5), { status: 'confirmed' }, 7),
     // Hostile: full. Stored status 'full' always matches players_joined === max_players.
     game(
       'g-full',
       at(now, 3 * 60),
-      { title: 'Basketball run', sport: 'basketball', location_id: 'l-rec', host_id: 'p-ben', status: 'full' },
+      { sport: 'basketball', location_id: 'l-rec', host_id: 'p-ben', status: 'full' },
       10,
     ),
     // Hostile: cancelled.
-    game('g-cancelled', at(now, 5 * 60), { title: 'Sunset volleyball', sport: 'volleyball', status: 'cancelled' }, 2),
-    // Hostile: 60-character title, long host name, long notes.
+    game('g-cancelled', at(now, 5 * 60), { sport: 'volleyball', status: 'cancelled' }, 2),
+    // Hostile: 60-character notes (the schema has no title column, so notes is the
+    // free text a card would show), long host name.
     game(
       'g-long',
       at(now, 26 * 60),
       {
-        title: 'Saturday Morning Ultimate Frisbee at BBC, All Levels Welcome',
         sport: 'ultimate',
         location_id: 'l-bbc',
         host_id: 'p-long',
         skill_level: 'beginner',
-        notes:
-          'Bring a light and a dark shirt. We play to 11, win by 2. Water is on you. If it rains we move under the bleachers and wait it out.',
+        notes: 'Saturday Morning Ultimate Frisbee at BBC, All Levels Welcome',
       },
       3,
     ),
@@ -102,7 +100,7 @@ function buildMockGames(now: Date): MockGame[] {
 
   // Hostile: 47 games on one day (tomorrow, every 15 minutes from 8:00).
   const crowdedDay = Array.from({ length: 47 }, (_, i) =>
-    game(`g-day-${i + 1}`, at(tomorrow, i * 15), { title: `Pickup soccer #${i + 1}`, host_id: 'p-ben' }, i % 6),
+    game(`g-day-${i + 1}`, at(tomorrow, i * 15), { host_id: 'p-ben' }, i % 6),
   );
 
   return [...named, ...crowdedDay];

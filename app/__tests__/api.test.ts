@@ -22,7 +22,7 @@ test('listGames() can return an empty list', async () => {
 });
 
 test('getGame() finds a game by id and returns null for an unknown id', async () => {
-  expect((await getGame('g-full'))?.title).toBe('Basketball run');
+  expect((await getGame('g-full'))?.sport).toBe('basketball');
   expect(await getGame('nope')).toBeNull();
 });
 
@@ -31,8 +31,8 @@ describe('hostile mock cases', () => {
     expect(games.some((g) => g.host.avatar_url === null)).toBe(true);
   });
 
-  test('a 60-character title', () => {
-    expect(byId('g-long').title).toHaveLength(60);
+  test('60 characters of free text (notes, since there is no title column)', () => {
+    expect(byId('g-long').notes).toHaveLength(60);
   });
 
   test('a very long host name', () => {

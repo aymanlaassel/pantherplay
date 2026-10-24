@@ -26,7 +26,6 @@ export type Location = {
 export type Game = {
   id: string;
   host_id: string;
-  title: string;
   sport: string; // SPORTS.code, e.g. 'soccer'
   location_id: string;
   starts_at: string;

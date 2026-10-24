@@ -255,7 +255,6 @@ erDiagram
   GAMES {
     uuid id PK
     uuid host_id FK
-    text title "shown on the game card, up to 60 chars"
     text sport FK
     uuid location_id FK
     timestamptz starts_at "always with timezone"
@@ -319,7 +318,7 @@ erDiagram
 | Table | In charge of |
 |---|---|
 | **PROFILES** | One row per student: name, photo, home campus. Its `id` is the same as their sign-in id, which links the login to the profile. |
-| **GAMES** | One row per posted game: title, who hosts, sport, place, start time, length, player limits and status. |
+| **GAMES** | One row per posted game: who hosts, sport, place, start time, length, player limits and status. |
 | **GAME_PLAYERS** | Who is in which game: one row per person per game, with their status (joined, waitlisted, left, no-show). Counting the `joined` rows gives the spots filled. |
 | **LOCATIONS** | The fixed list of campus spots (Panther Field, Rec Center…) and their photos. Games pick one, which is why there's no map API. |
 | **SPORTS** | The list of sports the app offers. |
