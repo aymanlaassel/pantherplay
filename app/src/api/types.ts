@@ -21,6 +21,8 @@ export type Location = {
   campus: Campus;
   name: string;
   photo_url: string | null;
+  latitude: number;
+  longitude: number;
 };
 
 export type Game = {
