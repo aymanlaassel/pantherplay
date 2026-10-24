@@ -12,7 +12,7 @@ export default function TabLayout() {
                     router.push('/game/create');
                 }
             }}/>
-            <Tabs.Screen name="social" options={{ title: 'Social' }}/>
+            <Tabs.Screen name="social" options={{ title: 'Social', headerShown: false }}/>
             <Tabs.Screen name="profile" options={{ title: 'Profile', headerShown: false }}/>
         </Tabs>
 )
