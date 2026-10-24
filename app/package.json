@@ -23,6 +23,7 @@
     "react-dom": "19.3.0",
     "react-native": "0.88.0",
     "react-native-gesture-handler": "~3.3.0",
+    "react-native-maps": "1.29.11",
     "react-native-reanimated": "4.7.1",
     "react-native-safe-area-context": "~5.10.1",
     "react-native-screens": "~4.30.0",
@@ -54,6 +55,9 @@
   "jest": {
     "preset": "jest-expo",
     "resolver": "react-native-reanimated/jest/resolver",
+    "setupFiles": [
+      "react-native-gesture-handler/jestSetup.js"
+    ],
     "moduleNameMapper": {
       "^@/assets/(.*)$": "<rootDir>/assets/$1",
       "^@/(.*)$": "<rootDir>/src/$1"
