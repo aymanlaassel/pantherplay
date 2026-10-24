@@ -46,3 +46,12 @@ export type GameWithDetails = Game & {
   location: Location;
   players_joined: number;
 };
+
+// What the Profile screen gets: the profile row plus things derived from other tables.
+// `sports` comes from PROFILE_SPORTS; the counts come from GAMES (hosted) and
+// GAME_PLAYERS (played). None of these are columns on PROFILES.
+export type ProfileWithDetails = Profile & {
+  sports: { sport: string; skill_level: SkillLevel }[];
+  games_hosted: number;
+  games_played: number;
+};

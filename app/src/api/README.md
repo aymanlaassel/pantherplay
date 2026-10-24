@@ -8,3 +8,4 @@ The only place screens get data from. Screens call these functions and never tal
 - `games.ts`: `listGames()`, `getGame(id)`.
 - `locations.ts`: `listLocations()`, the fixed campus spots with their coordinates (Map pins).
 - `mock-data.ts`: the fake data, including hostile cases (null avatar, 60-character notes, long host name, 47 games on one day, full, cancelled, starting in 5 minutes). Call `setMockScenario('empty')` to make `listGames()` return `[]` for the empty state.
+- `profile.ts`: `getCurrentProfile()`, the signed-in user's profile plus their sports and hosted/played counts (`ProfileWithDetails`). `mockLongNameProfile` is the hostile case (no avatar, very long name), shown on Profile with `?mock=long`.
