@@ -13,7 +13,7 @@ export default function TabLayout() {
                 }
             }}/>
             <Tabs.Screen name="social" options={{ title: 'Social' }}/>
-            <Tabs.Screen name="profile" options={{ title: 'Profile' }}/>
+            <Tabs.Screen name="profile" options={{ title: 'Profile', headerShown: false }}/>
         </Tabs>
 )
 }
