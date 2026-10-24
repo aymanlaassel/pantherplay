@@ -31,10 +31,32 @@ export const mockProfiles: Profile[] = [
   },
 ];
 
+// Coordinates are approximate spots on each campus, close enough to place a pin.
 export const mockLocations: Location[] = [
-  { id: 'l-field', campus: 'MMC', name: 'Panther Field', photo_url: 'https://picsum.photos/seed/panther-field/800/400' },
-  { id: 'l-rec', campus: 'MMC', name: 'Rec Center Courts', photo_url: 'https://picsum.photos/seed/rec-center/800/400' },
-  { id: 'l-bbc', campus: 'BBC', name: 'BBC Recreation Field', photo_url: null },
+  {
+    id: 'l-field',
+    campus: 'MMC',
+    name: 'Panther Field',
+    photo_url: 'https://picsum.photos/seed/panther-field/800/400',
+    latitude: 25.7538,
+    longitude: -80.3722,
+  },
+  {
+    id: 'l-rec',
+    campus: 'MMC',
+    name: 'Rec Center Courts',
+    photo_url: 'https://picsum.photos/seed/rec-center/800/400',
+    latitude: 25.7572,
+    longitude: -80.3781,
+  },
+  {
+    id: 'l-bbc',
+    campus: 'BBC',
+    name: 'BBC Recreation Field',
+    photo_url: null,
+    latitude: 25.9126,
+    longitude: -80.1411,
+  },
 ];
 
 type MockGame = { game: Game; players_joined: number };

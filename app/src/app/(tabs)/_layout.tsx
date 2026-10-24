@@ -5,7 +5,7 @@ export default function TabLayout() {
     return (
         <Tabs>
             <Tabs.Screen name="index" options={{ title: 'Discover', headerShown: false }}/>
-            <Tabs.Screen name="map" options={{ title: 'Map' }}/>
+            <Tabs.Screen name="map" options={{ title: 'Map', headerShown: false }}/>
             <Tabs.Screen name="create-button" options={{ title: '+' }} listeners={{
                 tabPress: (e) => {
                     e.preventDefault();
