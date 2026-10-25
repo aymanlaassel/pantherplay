@@ -15,8 +15,32 @@ export default function MapScreen() {
     longitude: number;
   };
 
-  // for asad's brainstorm: can pass image prop on marker, for custom marker
-  // for asad's brainstorm: callout element when marker pressed?
+  // TODO: for asad's brainstorm: can pass image prop on marker, for custom marker
+  // TODO: for asad's brainstorm: callout element when marker pressed?
+
+  const mockGames = [
+    {
+      id: '1',
+      name: '5v5 Soccer',
+      sport: 'soccer',
+      location_id: 'l-field',
+      spotsLeft: 3,
+    },
+    {
+      id: '2',
+      name: 'Friday 5v5 Pickup',
+      sport: 'basketball',
+      location_id: 'l-rec',
+      spotsLeft: 1,
+    },
+    {
+      id: '2',
+      name: 'Friday 3v3 Pickup',
+      sport: 'basketball',
+      location_id: 'l-bbc',
+      spotsLeft: 1,
+    }
+  ];
 
   const mockLocations: Location[] = [
     {
