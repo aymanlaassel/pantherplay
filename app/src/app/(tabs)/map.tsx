@@ -2,7 +2,10 @@ import { Pressable, Text, View, ScrollView } from 'react-native';
 import { useRef, useState } from 'react';
 import MapView, { Marker } from 'react-native-maps';
 import { router } from 'expo-router';
-import { colors } from '@/theme';
+
+import { MapGamePin } from '@/components/map-game-pin';
+import { MapGameRow } from '@/components/map-game-row';
+import { colors, space } from '@/theme';
 
 type Campus = 'MMC' | 'BBC';
 
@@ -98,6 +101,8 @@ const CAMPUS_REGIONS = {
 
 const CAMPUSES: Campus[] = ['MMC', 'BBC'];
 
+const SPORT_EMOJI = { soccer: '⚽', basketball: '🏀', volleyball: '🏐' };
+
 const findLocation = (game: Game) => mockLocations.find((location) => location.id === game.location_id);
 
 // Shows the time in the phone's timezone, e.g. "7:00 PM".
@@ -147,23 +152,14 @@ export default function MapScreen() {
           const location = findLocation(game);
           if (!location) return null;
 
-          const isSelected = selectedGame?.id === game.id;
-
           return (
             <Marker
               key={game.id}
               coordinate={{ latitude: location.latitude, longitude: location.longitude }}
+              anchor={{ x: 0.5, y: 1 }}
               onPress={() => selectGame(game)}
               tracksViewChanges={true}>
-              <View
-                style={{
-                  backgroundColor: isSelected ? colors.brand.gold : colors.bg.brand,
-                  borderRadius: 50,
-                  padding: 12,
-                  borderWidth: 3,
-                  borderColor: colors.bg.surface,
-                }}
-              />
+              <MapGamePin emoji={SPORT_EMOJI[game.sport]} selected={selectedGame?.id === game.id} />
             </Marker>
           );
         })}
@@ -172,14 +168,14 @@ export default function MapScreen() {
       <View
         style={{
           position: 'absolute',
-          top: 60,
-          left: 16,
+          top: space[12],
+          left: space[12],
           flexDirection: 'row',
           backgroundColor: colors.bg.surface,
           borderRadius: 20,
         }}>
         {CAMPUSES.map((option) => (
-          <Pressable key={option} onPress={() => switchCampus(option)} style={{ padding: 10 }}>
+          <Pressable key={option} onPress={() => switchCampus(option)} style={{ padding: 10, margin: 10 }}>
             <Text style={{ fontWeight: campus === option ? 'bold' : 'normal' }}>{option}</Text>
           </Pressable>
         ))}
@@ -193,37 +189,44 @@ export default function MapScreen() {
           right: 0,
           height: expanded ? '60%' : '20%',
           backgroundColor: colors.bg.surface,
-          padding: 20,
+          paddingTop: space[16],
+          paddingHorizontal: space[16],
           borderTopLeftRadius: 20,
           borderTopRightRadius: 20,
         }}>
-        <Pressable onPress={() => setExpanded(!expanded)}>
-          <Text>{expanded ? '▼ Collapse' : '▲ Expand'}</Text>
-        </Pressable>
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+          <View>
+            <Text style={{ fontSize: 20, fontWeight: 'bold', color: colors.text.primary }}>Games near {campus}</Text>
+            <Text style={{ marginTop: space[4] }}>{visibleGames.length} games today · sorted by start time</Text>
+          </View>
 
-        <Text style={{ fontSize: 20, fontWeight: 'bold' }}>Games near {campus}</Text>
-        <Text>{visibleGames.length} games today · sorted by start time</Text>
+          <Pressable
+            onPress={() => setExpanded(!expanded)}
+            style={{
+              width: 36,
+              height: 36,
+              borderRadius: 18,
+              backgroundColor: colors.bg.neutral,
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}>
+            <Text style={{ fontSize: 16, color: colors.text.primary }}>{expanded ? '▼' : '▲'}</Text>
+          </Pressable>
+        </View>
 
-        <ScrollView>
+        <ScrollView style={{ marginTop: space[12] }} contentContainerStyle={{ gap: space[8], paddingBottom: space[20] }}>
           {visibleGames.map((game) => (
-            <Pressable
+            <MapGameRow
               key={game.id}
+              emoji={SPORT_EMOJI[game.sport]}
+              title={game.name}
+              details={`${findLocation(game)?.name} · ${formatTime(game.starts_at)}`}
+              spotsLeft={game.spots_left}
+              // TODO: use BadgeStatus (on main) once this branch has it
+              badge={mockMyGameIds.includes(game.id) ? <Text>✓ Joined</Text> : undefined}
+              selected={selectedGame?.id === game.id}
               onPress={() => selectGame(game)}
-              style={{
-                padding: 15,
-                borderBottomWidth: 1,
-                borderBottomColor: colors.border.default,
-                backgroundColor: selectedGame?.id === game.id ? colors.bg.goldSoft : colors.bg.surface,
-              }}>
-              <Text style={{ fontWeight: 'bold' }}>{game.name}</Text>
-              <Text>
-                {findLocation(game)?.name} · {formatTime(game.starts_at)}
-              </Text>
-              <Text>
-                {game.spots_left} spots left
-                {mockMyGameIds.includes(game.id) && ' · ✓ Joined'}
-              </Text>
-            </Pressable>
+            />
           ))}
         </ScrollView>
       </View>
