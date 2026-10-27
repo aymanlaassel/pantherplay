@@ -91,7 +91,8 @@ flowchart TB
   Repo --> Server["server/<br/>Express + Prisma<br/>(pending: keep or remove)"]
 
   AppProj --> Screens["src/app/<br/>one file = one screen<br/>(Expo Router)"]
-  AppProj --> Comp["src/components/<br/>Button, GameCard, Chip…<br/>(same names as Figma)"]
+  AppProj --> Comp["src/components/<br/>Button, GameCard, Chip,<br/>Field, Stepper, Textarea…<br/>(same names as Figma)"]
+  AppProj --> Feat["src/features/<br/>one screen's own pieces<br/>(create-game/)"]
   AppProj --> Theme["src/theme/<br/>colors, fonts, spacing"]
   AppProj --> Api["src/api/<br/>functions that read/write data"]
   AppProj --> Lib["src/lib/"]
@@ -109,6 +110,8 @@ flowchart TB
 
   Comp --> Theme
   Screens --> Comp
+  Screens --> Feat
+  Feat --> Comp
   Screens --> Api
   Api --> Client
 
@@ -123,6 +126,7 @@ flowchart TB
 | `app/` | The whole phone app (the Expo project), with its own `package.json` and assets. Run `npx expo start` from here. |
 | `app/src/app/` | **Screens.** Each file is one screen, and its path becomes the screen's address: `game/[id].tsx` is the Game detail page for any game id. Folders in parentheses like `(auth)` group screens without changing the address. A `_layout.tsx` file wraps a group (the tab bar, the auth gate). |
 | `app/src/components/` | Reusable building blocks that many screens share (buttons, game cards, chips). Named like the Figma components, so designers and developers mean the same thing. |
+| `app/src/features/` | Pieces that belong to one screen only, too specific to be shared components. `create-game/` holds the Create game form: its sections, pickers, validation rules and form state. |
 | `app/src/theme/` | Colors, fonts, text styles, spacing and radius in one place, mirroring the Figma variables. Components use names like `colors.text.primary` (Figma `text/primary`), never hex codes, so changing a color is one edit. Light mode only. |
 | `app/src/api/` | The only place screens get data from: small functions like `listGames()` or `joinGame(id)` that call Supabase, so screens never write database queries themselves. |
 | `app/src/lib/supabase.ts` | Creating the one Supabase connection the whole app shares. |
