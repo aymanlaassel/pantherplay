@@ -3,9 +3,10 @@ import { useRef, useState } from 'react';
 import MapView, { Marker } from 'react-native-maps';
 import { router } from 'expo-router';
 
+import { BadgeStatus } from '@/components/badge-status';
 import { MapGamePin } from '@/components/map-game-pin';
 import { MapGameRow } from '@/components/map-game-row';
-import { colors, space } from '@/theme';
+import { colors, radius, space, typography } from '@/theme';
 
 type Campus = 'MMC' | 'BBC';
 
@@ -103,6 +104,9 @@ const CAMPUSES: Campus[] = ['MMC', 'BBC'];
 
 const SPORT_EMOJI = { soccer: '⚽', basketball: '🏀', volleyball: '🏐' };
 
+// Collapsed, the sheet shows its header plus the first game row in full.
+const SHEET_COLLAPSED_HEIGHT = 176;
+
 const findLocation = (game: Game) => mockLocations.find((location) => location.id === game.location_id);
 
 // Shows the time in the phone's timezone, e.g. "7:00 PM".
@@ -171,12 +175,22 @@ export default function MapScreen() {
           top: space[12],
           left: space[12],
           flexDirection: 'row',
+          padding: space[4],
           backgroundColor: colors.bg.surface,
-          borderRadius: 20,
+          borderRadius: radius.pill,
         }}>
         {CAMPUSES.map((option) => (
-          <Pressable key={option} onPress={() => switchCampus(option)} style={{ padding: 10, margin: 10 }}>
-            <Text style={{ fontWeight: campus === option ? 'bold' : 'normal' }}>{option}</Text>
+          <Pressable
+            key={option}
+            onPress={() => switchCampus(option)}
+            style={{ paddingHorizontal: space[16], paddingVertical: space[8] }}>
+            <Text
+              style={{
+                ...(campus === option ? typography['Body/Strong'] : typography['Body/Medium']),
+                color: campus === option ? colors.text.primary : colors.text.muted,
+              }}>
+              {option}
+            </Text>
           </Pressable>
         ))}
       </View>
@@ -187,21 +201,25 @@ export default function MapScreen() {
           bottom: 0,
           left: 0,
           right: 0,
-          height: expanded ? '60%' : '20%',
+          height: expanded ? '60%' : SHEET_COLLAPSED_HEIGHT,
           backgroundColor: colors.bg.surface,
           paddingTop: space[16],
           paddingHorizontal: space[16],
-          borderTopLeftRadius: 20,
-          borderTopRightRadius: 20,
+          borderTopLeftRadius: radius.card,
+          borderTopRightRadius: radius.card,
         }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
           <View>
-            <Text style={{ fontSize: 20, fontWeight: 'bold', color: colors.text.primary }}>Games near {campus}</Text>
-            <Text style={{ marginTop: space[4] }}>{visibleGames.length} games today · sorted by start time</Text>
+            <Text style={{ ...typography.Price, color: colors.text.primary }}>Games near {campus}</Text>
+            <Text style={{ ...typography['Body/Medium'], color: colors.text.muted, marginTop: space[4] }}>
+              {visibleGames.length} games today · sorted by start time
+            </Text>
           </View>
 
           <Pressable
             onPress={() => setExpanded(!expanded)}
+            accessibilityRole="button"
+            accessibilityLabel={expanded ? 'Collapse game list' : 'Expand game list'}
             style={{
               width: 36,
               height: 36,
@@ -210,7 +228,7 @@ export default function MapScreen() {
               alignItems: 'center',
               justifyContent: 'center',
             }}>
-            <Text style={{ fontSize: 16, color: colors.text.primary }}>{expanded ? '▼' : '▲'}</Text>
+            <Text style={{ ...typography.Button, color: colors.text.primary }}>{expanded ? '▼' : '▲'}</Text>
           </Pressable>
         </View>
 
@@ -222,8 +240,7 @@ export default function MapScreen() {
               title={game.name}
               details={`${findLocation(game)?.name} · ${formatTime(game.starts_at)}`}
               spotsLeft={game.spots_left}
-              // TODO: use BadgeStatus (on main) once this branch has it
-              badge={mockMyGameIds.includes(game.id) ? <Text>✓ Joined</Text> : undefined}
+              badge={mockMyGameIds.includes(game.id) ? <BadgeStatus status="joined" style={{ alignSelf: 'flex-end' }} /> : undefined}
               selected={selectedGame?.id === game.id}
               onPress={() => selectGame(game)}
             />
