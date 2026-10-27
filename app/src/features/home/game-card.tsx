@@ -5,7 +5,7 @@ import { BadgeLevel } from '@/components/badge-level';
 import { ButtonJoin } from '@/components/button-join';
 import { colors, radius, space, typography } from '@/theme';
 
-import { Icon } from './icon';
+import { Icon } from '@/components/icon';
 import type { HomeGame } from './mock-games';
 
 type GameCardProps = { game: HomeGame; onPress: () => void };

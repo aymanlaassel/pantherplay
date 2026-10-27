@@ -4,7 +4,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { SplitBorder } from '@/components/split-border';
 import { colors, space, typography } from '@/theme';
 
-import { Icon } from './icon';
+import { Icon } from '@/components/icon';
 
 type HomeHeaderProps = { name: string; onBellPress: () => void };
 
