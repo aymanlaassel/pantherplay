@@ -3,7 +3,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import type { ReactNode } from 'react';
 
-import { colors, fonts, radius, typography } from '@/theme';
+import { colors, radius, space, typography } from '@/theme';
 
 type MapGameRowProps = {
   emoji: string;
@@ -70,9 +70,9 @@ const styles = StyleSheet.create({
   row: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
+    gap: space[12],
+    paddingHorizontal: space[12],
+    paddingVertical: space[12],
     borderWidth: 1,
     borderColor: colors.border.default,
     borderRadius: radius.card,
@@ -88,10 +88,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   emoji: { fontSize: 20 },
-  info: { flex: 1, gap: 2 },
-  title: { fontFamily: fonts.interSemiBold, fontSize: 16, color: colors.text.primary },
-  location: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  details: { fontFamily: fonts.interMedium, fontSize: 12, color: colors.text.muted, flexShrink: 1 },
-  right: { alignItems: 'flex-end', gap: 4 },
+  info: { flex: 1, gap: space[4] },
+  title: { ...typography.Button, color: colors.text.primary },
+  location: { flexDirection: 'row', alignItems: 'center', gap: space[4] },
+  details: { ...typography.Caption, color: colors.text.muted, flexShrink: 1 },
+  right: { alignItems: 'flex-end', gap: space[4] },
   spots: { ...typography.Label, color: colors.text.gold },
 });
