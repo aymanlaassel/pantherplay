@@ -37,5 +37,8 @@ The proposed mockup includes:
 * Two main tabs: Chats and Friends.  
 * Conversation filters: All, Groups, and Unread.  
 * List items with profile pictures, names, and supporting information.  
-* Bottom navigation with Home, Map, Add, Chat/Social, and Profile.
+* Bottom navigation with Discover, Map, [+], Social, and Profile.
 
+### Social Tab Mockup
+
+![PantherPlay Social Tab Mockup](images/social-tab-mockup.png)
