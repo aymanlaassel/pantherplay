@@ -160,6 +160,7 @@ flowchart TD
   end
 
   Discover -- "tap a game card" --> Detail["Game detail"]
+  MapTab -- "tap a game twice" --> Detail
   Discover -- "tap the bell" --> Notifications["Notifications"]
   Plus -- "opens full-screen" --> Create["Create game"]
   Create -- "Post game" --> Detail
@@ -181,7 +182,7 @@ flowchart TD
 | **New user?** | Not a screen. The app checks whether this person has finished onboarding (see diagram 4). |
 | **Onboarding 1–4** | One-time setup for new users: home campus, sports and skill level, profile photo, and permission to send notifications (explained first, then the phone's own prompt). |
 | **Discover / Home** | The live board: games at your campus, filtered by date and sport. The main screen. |
-| **Map** | A map of where games are. In for v1 (decided). |
+| **Map** | A native map (`react-native-maps`, see [ADR 0004](./adr/0004-map-tab.md)) with a pin for each of today's games at the chosen campus (MMC/BBC), plus a bottom sheet listing them by start time. Tap a game once to highlight it and center the map; tap again to open Game detail. Uses mock data until the database exists. |
 | **＋** | The center tab button. Opens Create game. |
 | **Social** | The fourth tab (name decided). Probably friends and what they're playing; exactly what goes in it, and whether chat is included, is still pending. |
 | **Profile** | Your info and sports, plus the gear icon that opens Settings. |
@@ -276,6 +277,8 @@ erDiagram
     campus campus
     text name "e.g. Panther Field"
     text photo_url "the photo belongs to the place"
+    float8 latitude "where the pin goes on the Map tab"
+    float8 longitude
   }
   SPORTS {
     text code PK "soccer, basketball…"
@@ -320,7 +323,7 @@ erDiagram
 | **PROFILES** | One row per student: name, photo, home campus. Its `id` is the same as their sign-in id, which links the login to the profile. |
 | **GAMES** | One row per posted game: who hosts, sport, place, start time, length, player limits and status. |
 | **GAME_PLAYERS** | Who is in which game: one row per person per game, with their status (joined, waitlisted, left, no-show). Counting the `joined` rows gives the spots filled. |
-| **LOCATIONS** | The fixed list of campus spots (Panther Field, Rec Center…) and their photos. Games pick one, which is why there's no map API. |
+| **LOCATIONS** | The fixed list of campus spots (Panther Field, Rec Center…), their photos and their coordinates. Games pick one instead of typing an address; the Map tab uses the coordinates to drop a pin per game (see [ADR 0004](./adr/0004-map-tab.md)). |
 | **SPORTS** | The list of sports the app offers. |
 | **PROFILE_SPORTS** | Which sports each student plays and at what level, from onboarding. Used to set Discover's defaults. |
 | **NOTIFICATIONS** | Each student's in-app notification list, and which ones they've read. |
