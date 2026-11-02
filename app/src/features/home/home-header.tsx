@@ -6,19 +6,24 @@ import { colors, space, typography } from '@/theme';
 
 import { Icon } from '@/components/icon';
 
-type HomeHeaderProps = { name: string; onBellPress: () => void };
+type HomeHeaderProps = { name: string; hasUnread: boolean; onBellPress: () => void };
 
-export function HomeHeader({ name, onBellPress }: HomeHeaderProps) {
+export function greetingFor(hour: number): string {
+  if (hour < 12) return 'Good morning,';
+  return hour < 17 ? 'Good afternoon,' : 'Good evening,';
+}
+
+export function HomeHeader({ name, hasUnread, onBellPress }: HomeHeaderProps) {
   return (
     <View style={styles.row}>
       <View>
-        <Text style={styles.greeting}>Good morning,</Text>
+        <Text style={styles.greeting}>{greetingFor(new Date().getHours())}</Text>
         <Text style={styles.name}>{name}</Text>
       </View>
       <View style={styles.actions}>
         <Pressable onPress={onBellPress} accessibilityRole="button" accessibilityLabel="Notifications" style={styles.bell}>
           <Icon name="bell" color={colors.icon.active} />
-          <View style={styles.dot} />
+          {hasUnread ? <View testID="unread-dot" style={styles.dot} /> : null}
         </Pressable>
         <SplitBorder borderWidth={3} style={styles.avatar}>
           <Icon name="person" color={colors.icon.active} />

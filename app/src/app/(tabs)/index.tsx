@@ -10,6 +10,7 @@ import { GameCard } from '@/features/home/game-card';
 import { HomeHeader } from '@/features/home/home-header';
 import { MOCK_GAMES } from '@/features/home/mock-games';
 import { SearchBar } from '@/features/home/search-bar';
+import { MOCK_NOTIFICATIONS } from '@/mock/notifications';
 import { colors, space, typography } from '@/theme';
 
 export default function DiscoverScreen() {
@@ -21,7 +22,11 @@ export default function DiscoverScreen() {
 
   const top = (
     <View style={styles.top}>
-      <HomeHeader name="Panther!" onBellPress={() => router.push('/notifications')} />
+      <HomeHeader
+        name="Panther!"
+        hasUnread={MOCK_NOTIFICATIONS.some((n) => n.unread)}
+        onBellPress={() => router.push('/notifications')}
+      />
       <SearchBar activeFilters={active} onFilterPress={() => setFiltering(true)} />
       <DateChips />
     </View>
@@ -37,7 +42,7 @@ export default function DiscoverScreen() {
         ListHeaderComponent={top}
         ListEmptyComponent={
           <Text style={styles.empty}>
-            {active ? 'No games match your filters.' : 'No games yet. Be the first to post one.'}
+            {active ? 'No games match your filters.' : 'No games today. Be the first to post one.'}
           </Text>
         }
         renderItem={({ item }) => <GameCard game={item} onPress={() => router.push(`/game/${item.id}`)} />}

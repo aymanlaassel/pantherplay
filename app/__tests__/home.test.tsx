@@ -2,6 +2,7 @@ import { router } from 'expo-router';
 import { fireEvent, render, screen } from '@testing-library/react-native';
 
 import DiscoverScreen from '@/app/(tabs)/index';
+import { greetingFor, HomeHeader } from '@/features/home/home-header';
 import { MOCK_GAMES } from '@/features/home/mock-games';
 
 jest.mock('expo-router', () => ({ router: { push: jest.fn() } }));
@@ -11,16 +12,43 @@ beforeEach(() => (router.push as jest.Mock).mockClear());
 
 test('shows the greeting and a card for every game', async () => {
   await render(<DiscoverScreen />);
-  expect(screen.getByText('Good morning,')).toBeTruthy();
+  expect(screen.getByText(/^Good (morning|afternoon|evening),$/)).toBeTruthy();
   expect(screen.getByText('Panther!')).toBeTruthy();
   for (const game of MOCK_GAMES) expect(screen.getByText(game.title)).toBeTruthy();
-  expect(screen.getAllByText('Join game')).toHaveLength(MOCK_GAMES.length);
+  expect(screen.getAllByText('Join game')).toHaveLength(2);
+  expect(screen.getByText('View game')).toBeTruthy();
 });
 
 test('a card opens that game', async () => {
   await render(<DiscoverScreen />);
   await fireEvent.press(screen.getByText(MOCK_GAMES[1].title));
   expect(router.push).toHaveBeenCalledWith(`/game/${MOCK_GAMES[1].id}`);
+});
+
+test('the Join button on a card opens that game', async () => {
+  await render(<DiscoverScreen />);
+  await fireEvent.press(screen.getAllByRole('button', { name: 'Join game' })[0]);
+  expect(router.push).toHaveBeenCalledWith(`/game/${MOCK_GAMES[0].id}`);
+});
+
+test('cards only show the status their game has', async () => {
+  await render(<DiscoverScreen />);
+  expect(screen.getAllByText('Confirmed')).toHaveLength(1);
+  expect(screen.getAllByText('Joined')).toHaveLength(1);
+});
+
+test('the greeting follows the time of day', () => {
+  expect(greetingFor(8)).toBe('Good morning,');
+  expect(greetingFor(12)).toBe('Good afternoon,');
+  expect(greetingFor(18)).toBe('Good evening,');
+});
+
+test('the bell only shows a dot when something is unread', async () => {
+  const header = (hasUnread: boolean) => <HomeHeader name="Panther!" hasUnread={hasUnread} onBellPress={jest.fn()} />;
+  const view = await render(header(false));
+  expect(screen.queryByTestId('unread-dot')).toBeNull();
+  await view.rerender(header(true));
+  expect(screen.getByTestId('unread-dot')).toBeTruthy();
 });
 
 test('the bell opens notifications', async () => {

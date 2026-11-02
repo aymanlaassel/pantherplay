@@ -8,6 +8,8 @@ import { colors, radius, space, typography } from '@/theme';
 import { Icon } from '@/components/icon';
 import type { HomeGame } from './mock-games';
 
+const STATUS_LABEL: Record<NonNullable<HomeGame['status']>, string> = { confirmed: 'Confirmed', joined: 'Joined' };
+
 type GameCardProps = { game: HomeGame; onPress: () => void };
 
 export function GameCard({ game, onPress }: GameCardProps) {
@@ -21,10 +23,12 @@ export function GameCard({ game, onPress }: GameCardProps) {
       <View style={styles.body}>
         <View style={styles.row}>
           <Text style={styles.title}>{game.title}</Text>
-          <View style={styles.status}>
-            <Icon name="check" color={colors.text.success} size={14} />
-            <Text style={styles.confirmed}>Confirmed</Text>
-          </View>
+          {game.status ? (
+            <View style={styles.status}>
+              <Icon name="check" color={colors.text.success} size={14} />
+              <Text style={styles.confirmed}>{STATUS_LABEL[game.status]}</Text>
+            </View>
+          ) : null}
         </View>
         <Text style={styles.host}>{`Hosted by ${game.host}`}</Text>
         <View style={styles.place}>
@@ -40,7 +44,7 @@ export function GameCard({ game, onPress }: GameCardProps) {
           <Text style={styles.price}>{game.price}</Text>
         </View>
         <View style={styles.divider} />
-        <ButtonJoin label="Join game" />
+        <ButtonJoin label={game.status === 'joined' ? 'View game' : 'Join game'} onPress={onPress} />
       </View>
     </Pressable>
   );
@@ -56,8 +60,8 @@ const styles = StyleSheet.create({
   },
   photo: { height: 128, width: '100%', backgroundColor: colors.bg.avatar },
   body: { padding: space[16], gap: space[8] },
-  row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  title: { ...typography.Price, color: colors.text.primary },
+  row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: space[8] },
+  title: { ...typography.Price, color: colors.text.primary, flex: 1 },
   status: { flexDirection: 'row', alignItems: 'center', gap: space[4] },
   confirmed: { ...typography.Label, color: colors.text.success },
   host: { ...typography['Body/Strong'], color: colors.text.primary },
