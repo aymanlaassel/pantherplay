@@ -55,6 +55,64 @@ cp .env.example .env   # fill in your values
 npx expo start
 ```
 
+## Supabase local
+
+Follow these steps to set up Supabase locally for development.
+
+### 1. Install Docker
+
+Download and install [Docker Desktop](https://www.docker.com/products/docker-desktop/).
+
+Make sure Docker Desktop is running before starting Supabase.
+
+### 2. Install the Supabase CLI
+
+If you haven't installed the Supabase CLI, run:
+
+```bash
+brew install supabase/tap/supabase
+```
+
+### 3. Set up environment variables
+
+From the repository root, run:
+
+```bash
+cp app/.env.example app/.env
+```
+
+Replace the placeholder values in `app/.env` with the Supabase Project URL and publishable key shared by Felipe in the announcements channel.
+
+### 4. Start Supabase locally
+
+Make sure Docker Desktop is running, then run:
+
+```bash
+supabase start
+```
+
+The first run may take longer because Supabase needs to download PostgreSQL, Authentication, and other services.
+
+You can access the local dashboard at http://127.0.0.1:54323 when done.
+
+### 5. To reset the local database
+
+To clear your local data and recreate the tables from migrations, run:
+
+```bash
+supabase db reset
+```
+
+This only resets your local database, not the team's hosted database.
+
+### 6. To Stop Supabase
+
+When you're finished developing, run:
+
+```bash
+supabase stop
+```
+
 Scan the QR code with Expo Go to run the app.
 
 ## Why

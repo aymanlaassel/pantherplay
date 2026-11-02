@@ -24,7 +24,7 @@ A students-only app for organizing pickup sports games at FIU. React Native + Ex
 ## Commands
 Fill these in once the Expo app is scaffolded:
 - Start the app: `npx expo start`
-- Supabase local: _TBD_
+- Supabase local: `supabase start` to run and `supabase db reset` to reset local database.
 
 ## Checks
 Run from `app/` before every PR; all must pass.
