@@ -1,5 +1,6 @@
 import type { SkillLevel } from '@/components/badge-level';
 import type { GameBadgeStatus } from '@/components/badge-status';
+import { todayAt } from '@/mock/today-at';
 
 // 'open' has no badge; the rest match Badge/Status.
 export type GameState = 'open' | GameBadgeStatus;
@@ -9,7 +10,8 @@ export type GameDetail = {
   title: string;
   state: GameState;
   host: { name: string; initials: string; note: string };
-  when: string;
+  startsAt: string;
+  endsAt: string;
   place: string;
   level: SkillLevel;
   price: string;
@@ -22,7 +24,8 @@ export type GameDetail = {
 
 const base = {
   host: { name: 'Alex R.', initials: 'AR', note: 'Reliable host - 24 games' },
-  when: 'Today, 7:00 - 8:00 PM',
+  startsAt: todayAt(19),
+  endsAt: todayAt(20),
   place: 'Panther Field - MMC',
   level: 'beginner' as SkillLevel,
   price: 'Free',
@@ -32,11 +35,11 @@ const base = {
 };
 
 // Placeholder games until getGame(id) from the mock data layer (W2-04) is on main.
-// Ids 1 to 3 match the Home cards; 4 to 7 show the other states.
+// Ids 1 to 3 match Home and Map; 4 to 7 show the other states.
 export const MOCK_GAME_DETAILS: GameDetail[] = [
   { ...base, id: '1', title: '5v5 Soccer', state: 'almost-full', filled: 7, max: 10 },
-  { ...base, id: '2', title: 'Pickup Basketball', state: 'almost-full', filled: 9, max: 10, place: 'MMC Rec Center - MMC', level: 'intermediate' },
-  { ...base, id: '3', title: 'Sand Volleyball', state: 'open', filled: 5, max: 10, place: 'BBC Courts - BBC', level: 'advanced' },
+  { ...base, id: '2', title: 'Pickup Basketball', state: 'joined', filled: 9, max: 10, host: { ...base.host, name: 'Maya T.', initials: 'MT' }, startsAt: todayAt(18, 30), endsAt: todayAt(20), place: 'Rec Center Courts - MMC', level: 'intermediate', players: ['MT', 'MS', 'JT', 'KL', 'DP'] },
+  { ...base, id: '3', title: 'Sand Volleyball', state: 'open', filled: 5, max: 10, host: { ...base.host, name: 'Jordan P.', initials: 'JP' }, startsAt: todayAt(17), endsAt: todayAt(18, 30), place: 'BBC Recreation Field - BBC', level: 'advanced', players: ['JP', 'MS', 'JT', 'KL', 'DP'] },
   { ...base, id: '4', title: '5v5 Soccer', state: 'full', filled: 10, max: 10 },
   { ...base, id: '5', title: '5v5 Soccer', state: 'joined', filled: 7, max: 10 },
   { ...base, id: '6', title: '5v5 Soccer', state: 'cancelled', filled: 7, max: 10 },

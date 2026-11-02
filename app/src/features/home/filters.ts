@@ -31,7 +31,7 @@ export function applyFilters(games: HomeGame[], filters: Filters): HomeGame[] {
       (!filters.sport || game.sport === filters.sport) &&
       (!filters.campus || game.campus === filters.campus) &&
       (!filters.level || game.level === filters.level) &&
-      (!filters.time || inSlot(game.startHour, filters.time)),
+      (!filters.time || inSlot(new Date(game.startsAt).getHours(), filters.time)),
   );
 }
 

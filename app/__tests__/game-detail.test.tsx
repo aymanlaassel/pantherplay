@@ -27,7 +27,7 @@ test('shows the game from the Figma frame', async () => {
   await open('1');
   expect(screen.getByText('5v5 Soccer')).toBeTruthy();
   expect(screen.getByText('Hosted by Alex R.')).toBeTruthy();
-  expect(screen.getByText('Today, 7:00 - 8:00 PM')).toBeTruthy();
+  expect(screen.getByText(/^Today, 7:00\sPM - 8:00\sPM$/)).toBeTruthy();
   expect(screen.getByText('7 of 10 spots filled')).toBeTruthy();
   expect(screen.getByText('+2 more')).toBeTruthy();
   expect(screen.getByText('From the host')).toBeTruthy();

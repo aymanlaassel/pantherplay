@@ -1,6 +1,8 @@
 import type { SkillLevel } from '@/components/badge-level';
+import { todayAt } from '@/mock/today-at';
 
 // Placeholder games until the mock data layer (W2-04) and Supabase are wired in.
+// Ids 1 to 3 are the same games on Home, Map and Game detail.
 export type HomeGame = {
   id: string;
   title: string;
@@ -10,14 +12,14 @@ export type HomeGame = {
   location: string;
   level: SkillLevel;
   spotsLeft: number;
-  time: string;
-  startHour: number; // 24h, used by the time-of-day filter
+  startsAt: string;
+  endsAt: string;
   price: string;
   status: 'confirmed' | 'joined' | null; // null: no status shown on the card
 };
 
 export const MOCK_GAMES: HomeGame[] = [
-  { id: '1', title: '5v5 Soccer', sport: 'Soccer', campus: 'MMC', host: 'Alex R.', location: 'Panther Field', level: 'beginner', spotsLeft: 3, time: '7:00 - 8:00 PM', startHour: 19, price: 'Free', status: 'confirmed' },
-  { id: '2', title: 'Pickup Basketball', sport: 'Basketball', campus: 'MMC', host: 'Maya T.', location: 'MMC Rec Center', level: 'intermediate', spotsLeft: 1, time: '6:30 - 8:00 PM', startHour: 18, price: 'Free', status: 'joined' },
-  { id: '3', title: 'Sand Volleyball', sport: 'Volleyball', campus: 'BBC', host: 'Jordan P.', location: 'BBC Courts', level: 'advanced', spotsLeft: 5, time: '5:00 - 6:30 PM', startHour: 17, price: 'Free', status: null },
+  { id: '1', title: '5v5 Soccer', sport: 'Soccer', campus: 'MMC', host: 'Alex R.', location: 'Panther Field', level: 'beginner', spotsLeft: 3, startsAt: todayAt(19), endsAt: todayAt(20), price: 'Free', status: 'confirmed' },
+  { id: '2', title: 'Pickup Basketball', sport: 'Basketball', campus: 'MMC', host: 'Maya T.', location: 'Rec Center Courts', level: 'intermediate', spotsLeft: 1, startsAt: todayAt(18, 30), endsAt: todayAt(20), price: 'Free', status: 'joined' },
+  { id: '3', title: 'Sand Volleyball', sport: 'Volleyball', campus: 'BBC', host: 'Jordan P.', location: 'BBC Recreation Field', level: 'advanced', spotsLeft: 5, startsAt: todayAt(17), endsAt: todayAt(18, 30), price: 'Free', status: null },
 ];

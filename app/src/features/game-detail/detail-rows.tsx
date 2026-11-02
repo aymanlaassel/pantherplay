@@ -3,6 +3,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { SKILL_LEVEL_LABEL } from '@/components/badge-level';
 import { Icon, type IconName } from '@/components/icon';
+import { formatTimeRange } from '@/lib/format-time';
 import { colors, space, typography } from '@/theme';
 
 import type { GameDetail } from './mock-games';
@@ -10,7 +11,7 @@ import type { GameDetail } from './mock-games';
 export function DetailRows({ game }: { game: GameDetail }) {
   return (
     <View style={styles.rows}>
-      <Row icon="calendar" text={game.when} />
+      <Row icon="calendar" text={`Today, ${formatTimeRange(game.startsAt, game.endsAt)}`} />
       <Row icon="pin" text={game.place} chevron />
       <Row icon="level" text={`${SKILL_LEVEL_LABEL[game.level]} - ${game.price}`} />
     </View>

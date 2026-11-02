@@ -3,6 +3,7 @@ import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { BadgeLevel } from '@/components/badge-level';
 import { ButtonJoin } from '@/components/button-join';
+import { formatTimeRange } from '@/lib/format-time';
 import { colors, radius, space, typography } from '@/theme';
 
 import { Icon } from '@/components/icon';
@@ -40,7 +41,7 @@ export function GameCard({ game, onPress }: GameCardProps) {
           <Text style={styles.spots}>{`${game.spotsLeft} ${game.spotsLeft === 1 ? 'spot' : 'spots'} left!`}</Text>
         </View>
         <View style={styles.row}>
-          <Text style={styles.time}>{game.time}</Text>
+          <Text style={styles.time}>{formatTimeRange(game.startsAt, game.endsAt)}</Text>
           <Text style={styles.price}>{game.price}</Text>
         </View>
         <View style={styles.divider} />
