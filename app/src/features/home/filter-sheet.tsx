@@ -6,7 +6,7 @@ import { SKILL_LEVEL_LABEL, type SkillLevel } from '@/components/badge-level';
 import { ButtonFilled } from '@/components/button-filled';
 import { ButtonOutline } from '@/components/button-outline';
 import { CAMPUSES, SPORTS } from '@/features/create-game/options';
-import { colors, space, typography } from '@/theme';
+import { colors, radius, space, typography } from '@/theme';
 
 import { FilterSection } from './filter-section';
 import { applyFilters, EMPTY_FILTERS, TIME_SLOTS, type Filters } from './filters';
@@ -63,12 +63,12 @@ const styles = StyleSheet.create({
     maxHeight: '85%',
     padding: space[16],
     gap: space[16],
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
+    borderTopLeftRadius: radius.card,
+    borderTopRightRadius: radius.card,
     backgroundColor: colors.bg.surface,
   },
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  title: { ...typography['Display/Name'], fontSize: 28, lineHeight: 28, color: colors.text.primary },
+  title: { ...typography.Price, color: colors.text.primary },
   reset: { minHeight: 44, paddingHorizontal: space[8], justifyContent: 'center' },
   resetText: { ...typography['Body/Strong'], color: colors.text.primary },
   sections: { gap: space[20] },

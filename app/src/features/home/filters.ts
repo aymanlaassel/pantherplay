@@ -15,7 +15,7 @@ export const EMPTY_FILTERS: Filters = { sport: null, campus: null, time: null, l
 
 // Start hours are 24h, from inclusive to exclusive.
 export const TIME_SLOTS: { value: TimeSlot; label: string; from: number; to: number }[] = [
-  { value: 'morning', label: 'Morning', from: 5, to: 12 },
+  { value: 'morning', label: 'Morning', from: 0, to: 12 },
   { value: 'afternoon', label: 'Afternoon', from: 12, to: 17 },
   { value: 'evening', label: 'Evening', from: 17, to: 24 },
 ];

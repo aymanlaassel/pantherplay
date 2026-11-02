@@ -5,11 +5,13 @@ import { Icon } from '@/components/icon';
 import { SplitBorder } from '@/components/split-border';
 import { colors, radius, space } from '@/theme';
 
+const BORDER_WIDTH = 3;
+
 type PhotoHeaderProps = { onBack: () => void };
 
 export function PhotoHeader({ onBack }: PhotoHeaderProps) {
   return (
-    <SplitBorder borderWidth={3} borderRadius={radius.card} style={styles.frame}>
+    <SplitBorder borderWidth={BORDER_WIDTH} borderRadius={radius.card} style={styles.frame}>
       <Image
         source={require('@/assets/images/game-photo-placeholder.png')}
         accessibilityIgnoresInvertColors
@@ -34,8 +36,9 @@ function RoundButton({ icon, label, onPress }: RoundButtonProps) {
 }
 
 const styles = StyleSheet.create({
-  frame: { overflow: 'hidden' },
-  photo: { width: '100%', height: 176 },
+  // The border draws under its children, so the padding keeps the photo from covering it.
+  frame: { padding: BORDER_WIDTH },
+  photo: { width: '100%', height: 176, borderRadius: radius.card - BORDER_WIDTH },
   buttons: {
     position: 'absolute',
     top: space[12],

@@ -3,6 +3,7 @@ import { fireEvent, render, screen } from '@testing-library/react-native';
 import DiscoverScreen from '@/app/(tabs)/index';
 import { applyFilters, countActive, EMPTY_FILTERS } from '@/features/home/filters';
 import { MOCK_GAMES } from '@/features/home/mock-games';
+import { todayAt } from '@/mock/today-at';
 
 jest.mock('expo-router', () => ({ router: { push: jest.fn() } }));
 jest.mock('react-native-safe-area-context', () => require('react-native-safe-area-context/jest/mock').default);
@@ -23,6 +24,11 @@ describe('applyFilters', () => {
   test('time slots split the day: 5 PM to midnight is evening, nothing here is in the morning', () => {
     expect(applyFilters(MOCK_GAMES, { ...EMPTY_FILTERS, time: 'evening' })).toHaveLength(MOCK_GAMES.length);
     expect(applyFilters(MOCK_GAMES, { ...EMPTY_FILTERS, time: 'morning' })).toEqual([]);
+  });
+
+  test('every start hour lands in a slot, so a 3 AM game counts as morning', () => {
+    const early = [{ ...MOCK_GAMES[0], startsAt: todayAt(3) }];
+    expect(applyFilters(early, { ...EMPTY_FILTERS, time: 'morning' })).toEqual(early);
   });
 
   test('filters combine with AND', () => {

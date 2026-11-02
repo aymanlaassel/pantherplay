@@ -25,7 +25,7 @@ export default function GameDetailScreen() {
   if (!game) {
     return (
       <View style={[styles.missing, { paddingTop: insets.top }]}>
-        <Text style={styles.title}>Game not found</Text>
+        <Text style={styles.missingTitle}>Game not found</Text>
         <Pressable onPress={goBack} accessibilityRole="button" accessibilityLabel="Back" style={styles.back}>
           <Text style={styles.backText}>Back</Text>
         </Pressable>
@@ -62,6 +62,7 @@ const styles = StyleSheet.create({
   title: { ...typography['Title/Game'], color: colors.text.primary, flex: 1 },
   divider: { height: 1, backgroundColor: colors.border.default },
   missing: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: space[12], backgroundColor: colors.bg.surface },
+  missingTitle: { ...typography['Title/Game'], color: colors.text.primary },
   back: { minHeight: 44, paddingHorizontal: space[16], justifyContent: 'center' },
   backText: { ...typography['Body/Strong'], color: colors.text.primary },
 });
