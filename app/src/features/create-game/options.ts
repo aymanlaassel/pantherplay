@@ -1,3 +1,5 @@
+import { SKILL_LEVEL_LABEL } from '@/components/badge-level';
+
 // Placeholder choices until the sports seed and Figma limits are decided.
 export const SPORTS = ['Basketball', 'Soccer', 'Volleyball', 'Tennis', 'Pickleball', 'Flag football'];
 export const OTHER = 'Other';
@@ -6,7 +8,7 @@ export const DURATIONS = [
   { label: '1.5 hr', minutes: 90 },
   { label: '2 hr', minutes: 120 },
 ];
-export const SKILLS = ['Any', 'Casual', 'Competitive'];
+export const SKILLS = Object.values(SKILL_LEVEL_LABEL);
 export const CAMPUSES = ['MMC', 'BBC'];
 
 export const MIN_PLAYERS = 1;
