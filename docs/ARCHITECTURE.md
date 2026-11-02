@@ -159,7 +159,7 @@ flowchart TD
     Discover["Discover / Home"]
     MapTab["Map"]
     Plus(("＋"))
-    Social["Social<br/>(scope pending)"]
+    Social["Social<br/>(Chats + Friends)"]
     Profile["Profile"]
   end
 
@@ -174,7 +174,7 @@ flowchart TD
   MyGames["My Games<br/>(pending — no tab slot yet)"] -.-> Detail
 
   classDef pending stroke-dasharray: 5 5,color:#5A6B7D
-  class Social,Settings,NotifPrefs,MyGames,Campus,Sports,Photo,Notif pending
+  class Settings,NotifPrefs,MyGames,Campus,Sports,Photo,Notif pending
 ```
 
 **What each screen does:**
@@ -188,7 +188,7 @@ flowchart TD
 | **Discover / Home** | The live board: game cards with date chips and a search bar, plus a filter modal for sport, campus, time and skill level. The main screen. Uses mock data until the database exists; search and the date chips don't filter yet. |
 | **Map** | A native map (`react-native-maps`, see [ADR 0004](./adr/0004-map-tab.md)) with a pin for each of today's games at the chosen campus (MMC/BBC), plus a bottom sheet listing them by start time. Tap a game once to highlight it and center the map; tap again to open Game detail. Uses mock data until the database exists. |
 | **＋** | The center tab button. Opens Create game. |
-| **Social** | The fourth tab (name decided). Probably friends and what they're playing; exactly what goes in it, and whether chat is included, is still pending. |
+| **Social** | The fourth tab: a Chats list (All, Groups and Unread filters) and a Friends list, with search across both. See the [scope note](./social-page-scope.md). It's a skeleton on mock data for now: real chat and friend requests aren't built yet. |
 | **Profile** | Your info and sports, plus the gear icon that opens Settings. |
 | **Game detail** | One game: when, where, who's going, spots left, and the Join button. It opens on top of the tabs with a back button. Uses mock data until the database exists; the buttons don't join or leave yet. |
 | **Notifications** | Your list of updates (game cancelled, spot opened). Opened from the bell on Home. |
@@ -473,7 +473,7 @@ flowchart TB
     R1["Map"]
   end
   subgraph Igor["Igor"]
-    I1["Social tab<br/>(friends / chat; scope pending)"]
+    I1["Social tab<br/>(Chats + Friends)"]
   end
   subgraph Asad["Asad"]
     S1["Profile"]
@@ -491,7 +491,7 @@ flowchart TB
   end
 
   classDef pending stroke-dasharray: 5 5,color:#5A6B7D
-  class I1,U1,U2,U3,U4,U5,U6 pending
+  class U1,U2,U3,U4,U5,U6 pending
 ```
 
 **What the unowned areas cover:**
@@ -511,5 +511,5 @@ flowchart TB
 
 - **Who updates it:** whoever changes the thing the diagram shows, in the same PR.
 - **Felipe reviews** diagram changes, the same way he approves new Figma components.
-- When a pending decision is made (Social tab scope, My Games, waitlist), **remove the dashed style** and update the labels.
+- When a pending decision is made (My Games, waitlist), **remove the dashed style** and update the labels.
 - The reasons behind each big decision are recorded as ADRs in [`docs/adr/`](./adr/).

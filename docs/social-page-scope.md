@@ -42,3 +42,27 @@ The proposed mockup includes:
 ### Social Tab Mockup
 
 ![PantherPlay Social Tab Mockup](images/social-tab-mockup.png)
+
+## **4\. Out of Scope**
+
+### **Left out of this ticket (W2-09)**
+
+These need their own tickets:
+
+* Real chat: sending and receiving messages, or storing them. The Chats list only shows mock data.
+* A friend-requests backend: sending, accepting, or storing friend requests.
+* Any database tables or Supabase calls for the Social tab.
+
+### **Planned, but not in the skeleton yet**
+
+These features are in the sections above, but the current screen doesn't have them:
+
+* PantherPlay header with the campus selector.
+* Profile pictures (the skeleton shows initials).
+* The add-friend option.
+* Opening an individual or group conversation.
+* Viewing another student's profile.
+
+### **Not included**
+
+* Showing what friends are playing. It was suggested for this tab, but it isn't part of this scope.
