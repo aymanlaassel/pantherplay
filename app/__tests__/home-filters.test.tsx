@@ -15,9 +15,8 @@ describe('applyFilters', () => {
     expect(applyFilters(MOCK_GAMES, EMPTY_FILTERS)).toEqual(MOCK_GAMES);
   });
 
-  test('filters by sport, campus and skill level', () => {
+  test('filters by sport and skill level', () => {
     expect(applyFilters(MOCK_GAMES, { ...EMPTY_FILTERS, sport: 'Soccer' }).map((g) => g.id)).toEqual(['1']);
-    expect(applyFilters(MOCK_GAMES, { ...EMPTY_FILTERS, campus: 'BBC' }).map((g) => g.id)).toEqual(['3']);
     expect(applyFilters(MOCK_GAMES, { ...EMPTY_FILTERS, level: 'intermediate' }).map((g) => g.id)).toEqual(['2']);
   });
 
@@ -32,7 +31,7 @@ describe('applyFilters', () => {
   });
 
   test('filters combine with AND', () => {
-    expect(applyFilters(MOCK_GAMES, { ...EMPTY_FILTERS, sport: 'Soccer', campus: 'BBC' })).toEqual([]);
+    expect(applyFilters(MOCK_GAMES, { ...EMPTY_FILTERS, sport: 'Soccer', level: 'advanced' })).toEqual([]);
   });
 
   test('countActive counts only the chosen filters', () => {
@@ -47,10 +46,10 @@ describe('Home filter modal', () => {
     await fireEvent.press(screen.getByLabelText('Filters'));
   };
 
-  test('the filter button opens a sheet with sport, campus, time and skill level', async () => {
+  test('the filter button opens a sheet with sport, time and skill level', async () => {
     await openFilters();
-    for (const heading of ['Sport', 'Campus', 'Time', 'Skill level']) expect(screen.getByText(heading)).toBeTruthy();
-    expect(screen.getByText('Show 3 games')).toBeTruthy();
+    for (const heading of ['Sport', 'Time', 'Skill level']) expect(screen.getByText(heading)).toBeTruthy();
+    expect(screen.getByText('Show 2 games')).toBeTruthy();
   });
 
   test('choosing a sport previews the count, and Show applies it to the list', async () => {
@@ -77,7 +76,7 @@ describe('Home filter modal', () => {
     await openFilters();
     await fireEvent.press(screen.getByText('Soccer'));
     await fireEvent.press(screen.getByText('Reset'));
-    expect(screen.getByText('Show 3 games')).toBeTruthy();
+    expect(screen.getByText('Show 2 games')).toBeTruthy();
   });
 
   test('filters with no match show an empty message', async () => {

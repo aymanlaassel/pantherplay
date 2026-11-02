@@ -91,7 +91,7 @@ flowchart TB
   Repo --> Server["server/<br/>Express + Prisma<br/>(pending: keep or remove)"]
 
   AppProj --> Screens["src/app/<br/>one file = one screen<br/>(Expo Router)"]
-  AppProj --> Comp["src/components/<br/>Button, Chip, Icon,<br/>Field, Stepper, Textarea…<br/>(same names as Figma)"]
+  AppProj --> Comp["src/components/<br/>Button, Chip, Icon, CampusToggle,<br/>SpotsBar, Field, Stepper, Textarea…<br/>(same names as Figma)"]
   AppProj --> Feat["src/features/<br/>one screen's own pieces<br/>(create-game/, home/, game-detail/)"]
   AppProj --> Theme["src/theme/<br/>colors, fonts, spacing"]
   AppProj --> Api["src/api/<br/>functions that read/write data"]
@@ -185,7 +185,7 @@ flowchart TD
 | **Sign in** | One "Continue with Google" button for both new and returning users. |
 | **New user?** | Not a screen. The app checks whether this person has finished onboarding (see diagram 4). |
 | **Onboarding 1–4** | One-time setup for new users: home campus, sports and skill level, profile photo, and permission to send notifications (explained first, then the phone's own prompt). |
-| **Discover / Home** | The live board: game cards with date chips and a search bar, plus a filter modal for sport, campus, time and skill level. The main screen. Uses mock data until the database exists; search and the date chips don't filter yet. |
+| **Discover / Home** | The live board: a campus toggle (MMC/BBC, same as Map), date chips, a search bar and game cards with a spots bar, plus a filter modal for sport, time and skill level. The main screen. Uses mock data until the database exists; search and the date chips don't filter yet. |
 | **Map** | A native map (`react-native-maps`, see [ADR 0004](./adr/0004-map-tab.md)) with a pin for each of today's games at the chosen campus (MMC/BBC), plus a bottom sheet listing them by start time. Tap a game once to highlight it and center the map; tap again to open Game detail. Uses mock data until the database exists. |
 | **＋** | The center tab button. Opens Create game. |
 | **Social** | The fourth tab: a Chats list (All, Groups and Unread filters) and a Friends list, with search across both. See the [scope note](./social-page-scope.md). It's a skeleton on mock data for now: real chat and friend requests aren't built yet. |

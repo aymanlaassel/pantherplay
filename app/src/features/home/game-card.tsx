@@ -3,6 +3,7 @@ import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { BadgeLevel } from '@/components/badge-level';
 import { ButtonJoin } from '@/components/button-join';
+import { SpotsBar } from '@/components/spots-bar';
 import { formatTimeRange } from '@/lib/format-time';
 import { colors, radius, space, typography } from '@/theme';
 
@@ -14,6 +15,7 @@ const STATUS_LABEL: Record<NonNullable<HomeGame['status']>, string> = { confirme
 type GameCardProps = { game: HomeGame; onPress: () => void };
 
 export function GameCard({ game, onPress }: GameCardProps) {
+  const spotsLeft = game.max - game.filled;
   return (
     <Pressable onPress={onPress} accessibilityRole="button" style={styles.card}>
       <Image
@@ -38,8 +40,9 @@ export function GameCard({ game, onPress }: GameCardProps) {
         </View>
         <View style={styles.row}>
           <BadgeLevel level={game.level} />
-          <Text style={styles.spots}>{`${game.spotsLeft} ${game.spotsLeft === 1 ? 'spot' : 'spots'} left!`}</Text>
+          <Text style={styles.spots}>{`${spotsLeft} ${spotsLeft === 1 ? 'spot' : 'spots'} left!`}</Text>
         </View>
+        <SpotsBar filled={game.filled} max={game.max} />
         <View style={styles.row}>
           <Text style={styles.time}>{formatTimeRange(game.startsAt, game.endsAt)}</Text>
           <Text style={styles.price}>{game.price}</Text>
