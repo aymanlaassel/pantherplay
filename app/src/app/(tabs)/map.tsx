@@ -4,12 +4,11 @@ import MapView, { Marker } from 'react-native-maps';
 import { router } from 'expo-router';
 
 import { BadgeStatus } from '@/components/badge-status';
+import { CampusToggle, type Campus } from '@/components/campus-toggle';
 import { MapGamePin } from '@/components/map-game-pin';
 import { MapGameRow } from '@/components/map-game-row';
 import { colors, radius, space, typography } from '@/theme';
 import { todayAt } from '@/mock/today-at';
-
-type Campus = 'MMC' | 'BBC';
 
 type Game = {
   id: string;
@@ -95,8 +94,6 @@ const CAMPUS_REGIONS = {
   BBC: { latitude: 25.9107, longitude: -80.1392, latitudeDelta: 0.012, longitudeDelta: 0.012 },
 };
 
-const CAMPUSES: Campus[] = ['MMC', 'BBC'];
-
 const SPORT_EMOJI = { soccer: '⚽', basketball: '🏀', volleyball: '🏐' };
 
 // Collapsed, the sheet shows its header plus the first game row in full.
@@ -164,31 +161,11 @@ export default function MapScreen() {
         })}
       </MapView>
 
-      <View
-        style={{
-          position: 'absolute',
-          top: space[12],
-          left: space[12],
-          flexDirection: 'row',
-          padding: space[4],
-          backgroundColor: colors.bg.surface,
-          borderRadius: radius.pill,
-        }}>
-        {CAMPUSES.map((option) => (
-          <Pressable
-            key={option}
-            onPress={() => switchCampus(option)}
-            style={{ paddingHorizontal: space[16], paddingVertical: space[8] }}>
-            <Text
-              style={{
-                ...(campus === option ? typography['Body/Strong'] : typography['Body/Medium']),
-                color: campus === option ? colors.text.primary : colors.text.muted,
-              }}>
-              {option}
-            </Text>
-          </Pressable>
-        ))}
-      </View>
+      <CampusToggle
+        value={campus}
+        onChange={switchCampus}
+        style={{ position: 'absolute', top: space[12], left: space[12] }}
+      />
 
       <View
         style={{

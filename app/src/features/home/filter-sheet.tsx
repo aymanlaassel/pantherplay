@@ -5,7 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { SKILL_LEVEL_LABEL, type SkillLevel } from '@/components/badge-level';
 import { ButtonFilled } from '@/components/button-filled';
 import { ButtonOutline } from '@/components/button-outline';
-import { CAMPUSES, SPORTS } from '@/features/create-game/options';
+import { SPORTS } from '@/features/create-game/options';
 import { colors, radius, space, typography } from '@/theme';
 
 import { FilterSection } from './filter-section';
@@ -42,7 +42,6 @@ export function FilterSheet({ filters, games, onApply, onClose }: FilterSheetPro
       </View>
       <ScrollView contentContainerStyle={styles.sections}>
         <FilterSection title="Sport" options={toOptions(SPORTS)} value={draft.sport} onChange={(v) => set('sport', v)} />
-        <FilterSection title="Campus" options={toOptions(CAMPUSES)} value={draft.campus} onChange={(v) => set('campus', v)} />
         <FilterSection title="Time" options={TIME_SLOTS} value={draft.time} onChange={(v) => set('time', v)} />
         <FilterSection title="Skill level" options={LEVELS} value={draft.level} onChange={(v) => set('level', v)} />
       </ScrollView>

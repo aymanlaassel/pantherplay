@@ -5,7 +5,7 @@ import GameDetailScreen from '@/app/game/[id]';
 import { BADGE_STATUS_LABEL } from '@/components/badge-status';
 import { ACTION_LABEL } from '@/features/game-detail/action-bar';
 import { MOCK_GAME_DETAILS, getMockGame } from '@/features/game-detail/mock-games';
-import { MAX_SEGMENTS, SpotsBar } from '@/features/game-detail/spots-bar';
+import { MAX_SEGMENTS, SpotsBar } from '@/components/spots-bar';
 
 jest.mock('expo-router', () => ({
   router: { back: jest.fn(), replace: jest.fn(), canGoBack: jest.fn(() => true) },

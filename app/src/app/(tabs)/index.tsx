@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { FlatList, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { CampusToggle, type Campus } from '@/components/campus-toggle';
 import { DateChips } from '@/features/home/date-chips';
 import { FilterModal } from '@/features/home/filter-modal';
 import { applyFilters, countActive, EMPTY_FILTERS } from '@/features/home/filters';
@@ -15,10 +16,12 @@ import { colors, space, typography } from '@/theme';
 
 export default function DiscoverScreen() {
   const insets = useSafeAreaInsets();
+  const [campus, setCampus] = useState<Campus>('MMC');
   const [filters, setFilters] = useState(EMPTY_FILTERS);
   const [filtering, setFiltering] = useState(false);
   const active = countActive(filters);
-  const games = applyFilters(MOCK_GAMES, filters);
+  const campusGames = MOCK_GAMES.filter((game) => game.campus === campus);
+  const games = applyFilters(campusGames, filters);
 
   const top = (
     <View style={styles.top}>
@@ -27,6 +30,7 @@ export default function DiscoverScreen() {
         hasUnread={MOCK_NOTIFICATIONS.some((n) => n.unread)}
         onBellPress={() => router.push('/notifications')}
       />
+      <CampusToggle value={campus} onChange={setCampus} style={styles.campus} />
       <SearchBar activeFilters={active} onFilterPress={() => setFiltering(true)} />
       <DateChips />
     </View>
@@ -50,7 +54,7 @@ export default function DiscoverScreen() {
       <FilterModal
         visible={filtering}
         filters={filters}
-        games={MOCK_GAMES}
+        games={campusGames}
         onApply={(next) => {
           setFilters(next);
           setFiltering(false);
@@ -65,5 +69,6 @@ const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.bg.screen },
   list: { paddingHorizontal: space[16], paddingBottom: space[20], gap: space[16] },
   top: { gap: space[16] },
+  campus: { alignSelf: 'flex-start' },
   empty: { ...typography['Body/Regular'], color: colors.text.muted, textAlign: 'center' },
 });

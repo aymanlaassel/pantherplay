@@ -10,12 +10,11 @@ jest.mock('react-native-safe-area-context', () => require('react-native-safe-are
 
 beforeEach(() => (router.push as jest.Mock).mockClear());
 
-test('shows the greeting and a card for every game', async () => {
+test('shows the greeting', async () => {
   await render(<DiscoverScreen />);
   expect(screen.getByText(/^Good (morning|afternoon|evening),$/)).toBeTruthy();
   expect(screen.getByText('Panther!')).toBeTruthy();
-  for (const game of MOCK_GAMES) expect(screen.getByText(game.title)).toBeTruthy();
-  expect(screen.getAllByText('Join game')).toHaveLength(2);
+  expect(screen.getAllByText('Join game')).toHaveLength(1);
   expect(screen.getByText('View game')).toBeTruthy();
 });
 
@@ -23,6 +22,27 @@ test('a card opens that game', async () => {
   await render(<DiscoverScreen />);
   await fireEvent.press(screen.getByText(MOCK_GAMES[1].title));
   expect(router.push).toHaveBeenCalledWith(`/game/${MOCK_GAMES[1].id}`);
+});
+
+test('the campus toggle starts on MMC and switches to that campus\'s games', async () => {
+  const titles = (campus: string) => MOCK_GAMES.filter((game) => game.campus === campus).map((game) => game.title);
+  await render(<DiscoverScreen />);
+  expect(screen.getByRole('button', { name: 'MMC', selected: true })).toBeTruthy();
+  for (const title of titles('MMC')) expect(screen.getByText(title)).toBeTruthy();
+  for (const title of titles('BBC')) expect(screen.queryByText(title)).toBeNull();
+
+  await fireEvent.press(screen.getByRole('button', { name: 'BBC' }));
+  expect(screen.getByRole('button', { name: 'BBC', selected: true })).toBeTruthy();
+  for (const title of titles('BBC')) expect(screen.getByText(title)).toBeTruthy();
+  for (const title of titles('MMC')) expect(screen.queryByText(title)).toBeNull();
+});
+
+test('each card shows a spots bar that matches its spots left', async () => {
+  await render(<DiscoverScreen />);
+  expect(screen.getByText('7 of 10 spots filled')).toBeTruthy();
+  expect(screen.getByText('3 spots left!')).toBeTruthy();
+  expect(screen.getByText('9 of 10 spots filled')).toBeTruthy();
+  expect(screen.getByText('1 spot left!')).toBeTruthy();
 });
 
 test('the Join button on a card opens that game', async () => {

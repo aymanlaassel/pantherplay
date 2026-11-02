@@ -3,6 +3,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { BadgeStatus } from '@/components/badge-status';
+import { SpotsBar } from '@/components/spots-bar';
 import { ActionBar } from '@/features/game-detail/action-bar';
 import { CancellationCard } from '@/features/game-detail/cancellation-card';
 import { DetailRows } from '@/features/game-detail/detail-rows';
@@ -11,7 +12,6 @@ import { HostRow } from '@/features/game-detail/host-row';
 import { getMockGame } from '@/features/game-detail/mock-games';
 import { PhotoHeader } from '@/features/game-detail/photo-header';
 import { PlayersRow } from '@/features/game-detail/players-row';
-import { SpotsBar } from '@/features/game-detail/spots-bar';
 import { colors, space, typography } from '@/theme';
 
 // A page opened directly (web refresh) has no screen behind it, so fall back to home.

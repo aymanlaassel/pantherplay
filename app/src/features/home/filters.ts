@@ -6,12 +6,11 @@ export type TimeSlot = 'morning' | 'afternoon' | 'evening';
 
 export type Filters = {
   sport: string | null;
-  campus: string | null;
   time: TimeSlot | null;
   level: SkillLevel | null;
 };
 
-export const EMPTY_FILTERS: Filters = { sport: null, campus: null, time: null, level: null };
+export const EMPTY_FILTERS: Filters = { sport: null, time: null, level: null };
 
 // Start hours are 24h, from inclusive to exclusive.
 export const TIME_SLOTS: { value: TimeSlot; label: string; from: number; to: number }[] = [
@@ -29,7 +28,6 @@ export function applyFilters(games: HomeGame[], filters: Filters): HomeGame[] {
   return games.filter(
     (game) =>
       (!filters.sport || game.sport === filters.sport) &&
-      (!filters.campus || game.campus === filters.campus) &&
       (!filters.level || game.level === filters.level) &&
       (!filters.time || inSlot(new Date(game.startsAt).getHours(), filters.time)),
   );
