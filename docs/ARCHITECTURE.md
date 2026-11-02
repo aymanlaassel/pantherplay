@@ -91,8 +91,8 @@ flowchart TB
   Repo --> Server["server/<br/>Express + Prisma<br/>(pending: keep or remove)"]
 
   AppProj --> Screens["src/app/<br/>one file = one screen<br/>(Expo Router)"]
-  AppProj --> Comp["src/components/<br/>Button, GameCard, Chip,<br/>Field, Stepper, Textarea…<br/>(same names as Figma)"]
-  AppProj --> Feat["src/features/<br/>one screen's own pieces<br/>(create-game/)"]
+  AppProj --> Comp["src/components/<br/>Button, Chip, Icon,<br/>Field, Stepper, Textarea…<br/>(same names as Figma)"]
+  AppProj --> Feat["src/features/<br/>one screen's own pieces<br/>(create-game/, home/, game-detail/)"]
   AppProj --> Theme["src/theme/<br/>colors, fonts, spacing"]
   AppProj --> Api["src/api/<br/>functions that read/write data"]
   AppProj --> Lib["src/lib/"]
@@ -125,8 +125,8 @@ flowchart TB
 |---|---|
 | `app/` | The whole phone app (the Expo project), with its own `package.json` and assets. Run `npx expo start` from here. |
 | `app/src/app/` | **Screens.** Each file is one screen, and its path becomes the screen's address: `game/[id].tsx` is the Game detail page for any game id. Folders in parentheses like `(auth)` group screens without changing the address. A `_layout.tsx` file wraps a group (the tab bar, the auth gate). |
-| `app/src/components/` | Reusable building blocks that many screens share (buttons, game cards, chips). Named like the Figma components, so designers and developers mean the same thing. |
-| `app/src/features/` | Pieces that belong to one screen only, too specific to be shared components. `create-game/` holds the Create game form: its sections, pickers, validation rules and form state. |
+| `app/src/components/` | Reusable building blocks that many screens share (buttons, chips, icons). Named like the Figma components, so designers and developers mean the same thing. |
+| `app/src/features/` | Pieces that belong to one screen only, too specific to be shared components. `create-game/` holds the Create game form: its sections, pickers, validation rules and form state. `home/` holds Discover's header, search bar, date chips, game card and filter modal. `game-detail/` holds the sections of the Game detail page. |
 | `app/src/theme/` | Colors, fonts, text styles, spacing and radius in one place, mirroring the Figma variables. Components use names like `colors.text.primary` (Figma `text/primary`), never hex codes, so changing a color is one edit. Light mode only. |
 | `app/src/api/` | The only place screens get data from: small functions like `listGames()` or `joinGame(id)` that call Supabase, so screens never write database queries themselves. |
 | `app/src/lib/supabase.ts` | Creating the one Supabase connection the whole app shares. |
@@ -185,12 +185,12 @@ flowchart TD
 | **Sign in** | One "Continue with Google" button for both new and returning users. |
 | **New user?** | Not a screen. The app checks whether this person has finished onboarding (see diagram 4). |
 | **Onboarding 1–4** | One-time setup for new users: home campus, sports and skill level, profile photo, and permission to send notifications (explained first, then the phone's own prompt). |
-| **Discover / Home** | The live board: games at your campus, filtered by date and sport. The main screen. |
+| **Discover / Home** | The live board: game cards with date chips and a search bar, plus a filter modal for sport, campus, time and skill level. The main screen. Uses mock data until the database exists; search and the date chips don't filter yet. |
 | **Map** | A native map (`react-native-maps`, see [ADR 0004](./adr/0004-map-tab.md)) with a pin for each of today's games at the chosen campus (MMC/BBC), plus a bottom sheet listing them by start time. Tap a game once to highlight it and center the map; tap again to open Game detail. Uses mock data until the database exists. |
 | **＋** | The center tab button. Opens Create game. |
 | **Social** | The fourth tab (name decided). Probably friends and what they're playing; exactly what goes in it, and whether chat is included, is still pending. |
 | **Profile** | Your info and sports, plus the gear icon that opens Settings. |
-| **Game detail** | One game: when, where, who's going, spots left, and the Join button. It opens on top of the tabs with a back button. |
+| **Game detail** | One game: when, where, who's going, spots left, and the Join button. It opens on top of the tabs with a back button. Uses mock data until the database exists; the buttons don't join or leave yet. |
 | **Notifications** | Your list of updates (game cancelled, spot opened). Opened from the bell on Home. |
 | **Create game** | The full-screen form to host a game. Posting it opens the new game's detail page. |
 | **Settings / Notification preferences** | Account options (sign out, delete account, blocked users) and which notifications you get. Not designed yet. |

@@ -7,6 +7,7 @@ import { BadgeStatus } from '@/components/badge-status';
 import { MapGamePin } from '@/components/map-game-pin';
 import { MapGameRow } from '@/components/map-game-row';
 import { colors, radius, space, typography } from '@/theme';
+import { todayAt } from '@/mock/today-at';
 
 type Campus = 'MMC' | 'BBC';
 
@@ -31,13 +32,7 @@ type Location = {
 // TODO: for asad's brainstorm: can pass image prop on marker, for custom marker
 // TODO: for asad's brainstorm: callout element when marker pressed?
 
-// Mock games happen today at the given hour, so they always pass the "today" filter.
-const todayAt = (hour: number) => {
-  const date = new Date();
-  date.setHours(hour, 0, 0, 0);
-  return date.toISOString();
-};
-
+// Ids 1 to 3 are the same games on Home, Map and Game detail.
 const mockGames: Game[] = [
   {
     id: '1',
@@ -49,19 +44,19 @@ const mockGames: Game[] = [
   },
   {
     id: '2',
-    name: 'Friday 5v5 Pickup',
+    name: 'Pickup Basketball',
     sport: 'basketball',
     location_id: 'l-rec',
     spots_left: 1,
-    starts_at: todayAt(18),
+    starts_at: todayAt(18, 30),
   },
   {
     id: '3',
-    name: 'Friday 3v3 Pickup',
-    sport: 'basketball',
+    name: 'Sand Volleyball',
+    sport: 'volleyball',
     location_id: 'l-bbc',
-    spots_left: 1,
-    starts_at: todayAt(20),
+    spots_left: 5,
+    starts_at: todayAt(17),
   },
 ];
 
