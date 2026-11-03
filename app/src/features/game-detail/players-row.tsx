@@ -1,9 +1,8 @@
 // Figma: Players row (104:291). Overlapping initials of who joined, then how many more.
 import { StyleSheet, Text, View } from 'react-native';
 
+import { InitialsAvatar } from '@/components/initials-avatar';
 import { colors, space, typography } from '@/theme';
-
-import { InitialsAvatar } from './initials-avatar';
 
 type PlayersRowProps = { players: string[]; filled: number };
 
