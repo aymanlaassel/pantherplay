@@ -28,10 +28,11 @@ Fill these in once the Expo app is scaffolded:
 
 ## Checks
 Run from `app/` before every PR; all must pass.
+CI (`.github/workflows/ci.yml`) also runs lint, typecheck and tests on every PR. The smoke test is local only.
 
 | Check | Command |
 |---|---|
-| Typecheck | `npx tsc --noEmit` |
+| Typecheck | `npm run typecheck` |
 | Lint | `npm run lint` |
 | Tests | `npm test` |
 | Smoke test (bundles the app) | `npx expo export --platform ios --output-dir /tmp/export-check` |
