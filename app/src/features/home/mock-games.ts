@@ -25,3 +25,8 @@ export const MOCK_GAMES: HomeGame[] = [
   { id: '2', title: 'Pickup Basketball', sport: 'Basketball', campus: 'MMC', host: 'Maya T.', location: 'Rec Center Courts', level: 'intermediate', filled: 9, max: 10, startsAt: todayAt(18, 30), endsAt: todayAt(20), price: 'Free', status: 'joined' },
   { id: '3', title: 'Sand Volleyball', sport: 'Volleyball', campus: 'BBC', host: 'Jordan P.', location: 'BBC Recreation Field', level: 'advanced', filled: 5, max: 10, startsAt: todayAt(17), endsAt: todayAt(18, 30), price: 'Free', status: null },
 ];
+
+// Stands in for the real request until Supabase is wired in, so Home already handles waiting and failing.
+export async function listMockGames(): Promise<HomeGame[]> {
+  return MOCK_GAMES;
+}

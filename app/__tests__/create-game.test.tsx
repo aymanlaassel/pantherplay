@@ -31,7 +31,7 @@ const valid: GameForm = {
   campus: 'MMC',
   location: 'Panther Field',
   players: 4,
-  skill: 'Any',
+  skill: 'Beginner',
   notes: '',
 };
 
