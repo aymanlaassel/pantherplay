@@ -8,8 +8,7 @@
     "scheme": "app",
     "userInterfaceStyle": "light",
     "ios": {
-      "icon": "./assets/expo.icon",
-      "bundleIdentifier": "com.roliv091.app"
+      "icon": "./assets/expo.icon"
     },
     "android": {
       "adaptiveIcon": {

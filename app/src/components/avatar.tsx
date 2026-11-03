@@ -1,10 +1,12 @@
 import { StyleSheet, Text, View, type ViewProps } from 'react-native';
 
+import { colors } from '@/theme';
+
 const AvatarColors = {
-  background: '#EAEFF6',
-  text: '#002C4F',
-  ringBrand: '#002C4F',
-  ringGold: '#D9A242',
+  background: colors.bg.avatar,
+  text: colors.text.primary,
+  ringBrand: colors.border.navy,
+  ringGold: colors.border.gold,
 } as const;
 
 const Sizes = {
