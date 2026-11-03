@@ -91,7 +91,7 @@ flowchart TB
   Repo --> Server["server/<br/>Express + Prisma<br/>(pending: keep or remove)"]
 
   AppProj --> Screens["src/app/<br/>one file = one screen<br/>(Expo Router)"]
-  AppProj --> Comp["src/components/<br/>Button, Chip, Icon, CampusToggle,<br/>SpotsBar, Field, Stepper, Textarea…<br/>(same names as Figma)"]
+  AppProj --> Comp["src/components/<br/>Button, Chip, Icon, CampusToggle,<br/>SpotsBar, Field, Stepper, Textarea, TabBar…<br/>(same names as Figma)"]
   AppProj --> Feat["src/features/<br/>one screen's own pieces<br/>(create-game/, home/, game-detail/)"]
   AppProj --> Theme["src/theme/<br/>colors, fonts, spacing"]
   AppProj --> Api["src/api/<br/>functions that read/write data"]

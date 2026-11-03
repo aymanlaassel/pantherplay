@@ -13,6 +13,8 @@ const PATHS = {
   chevronRight: 'M9 18l6-6-6-6',
   share: 'M12 15V3M8 7l4-4 4 4M6 11H5a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-6a2 2 0 0 0-2-2h-1',
   level: 'M6 20v-4M12 20v-9M18 20V5',
+  people: 'M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8ZM22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75',
+  plus: 'M12 5v14M5 12h14',
 } as const;
 
 export type IconName = keyof typeof PATHS;
