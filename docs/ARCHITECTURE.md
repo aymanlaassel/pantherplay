@@ -91,7 +91,7 @@ flowchart TB
   Repo --> Server["server/<br/>Express + Prisma<br/>(pending: keep or remove)"]
 
   AppProj --> Screens["src/app/<br/>one file = one screen<br/>(Expo Router)"]
-  AppProj --> Comp["src/components/<br/>Button, Chip, Icon, CampusToggle,<br/>SpotsBar, Field, Stepper, Textarea…<br/>(same names as Figma)"]
+  AppProj --> Comp["src/components/<br/>Button, Chip, Icon, CampusToggle,<br/>SpotsBar, Field, Stepper, Textarea, TabBar…<br/>(same names as Figma)"]
   AppProj --> Feat["src/features/<br/>one screen's own pieces<br/>(create-game/, home/, game-detail/, profile/)"]
   AppProj --> Theme["src/theme/<br/>colors, fonts, spacing"]
   AppProj --> Api["src/api/<br/>functions that read/write data"]
@@ -224,7 +224,6 @@ flowchart TD
 | **Save profile** | Saving the onboarding answers and stamping `onboarding_completed_at` with the current time, so the next launch goes straight to Discover. |
 
 This check lives in the root layout, `app/src/app/_layout.tsx`, which every screen passes through.
-d
 ---
 
 ## 5. The database
@@ -441,7 +440,7 @@ flowchart LR
 |---|---|
 | **Your laptop / branch** | Your own copy of the code. A branch is a separate line of work, so you can't break `main` while you build. |
 | **Pull Request (PR)** | Asking to merge your branch into `main`. It's where teammates see your changes and comment. |
-| **CI checks** | Automatic checks on every PR: lint (style mistakes), typecheck (TypeScript errors) and tests. Not set up yet. |
+| **CI checks** | Automatic checks on every PR: lint (style mistakes), typecheck (TypeScript errors) and tests. Set up in `.github/workflows/ci.yml`. |
 | **Review** | One teammate reads your code within 24 hours and approves it or asks for changes. |
 | **Merge to main** | Adding your change to `main`, the shared working version that everyone branches from. |
 | **EAS Build** | Expo's cloud service that turns the code into real iPhone and Android apps. |

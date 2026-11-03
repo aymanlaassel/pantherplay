@@ -16,6 +16,7 @@ export default function SettingsScreen() {
           onPress={() => router.back()}
           accessibilityRole="button"
           accessibilityLabel="Back"
+          hitSlop={8}
           style={styles.back}>
           <Icon name="chevronLeft" color={colors.icon.active} size={24} />
         </Pressable>

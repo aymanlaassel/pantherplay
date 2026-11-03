@@ -1,5 +1,4 @@
 // The Profile tab's sections. Takes the user as a prop so tests can pass hostile data.
-import { Image } from 'expo-image';
 import { router } from 'expo-router';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
@@ -56,7 +55,7 @@ export function ProfileContent({ user }: { user: ProfileUser }) {
             accessibilityRole="button"
             accessibilityLabel="Settings"
             hitSlop={8}>
-            <Image source={require('@/assets/images/profile/gear.svg')} style={styles.icon} />
+            <Icon name="gear" color={colors.icon.active} size={ICON_SIZE} />
           </Pressable>
         </View>
       </View>
@@ -161,10 +160,6 @@ const styles = StyleSheet.create({
     gap: space[16],
     paddingTop: space[8],
   },
-  icon: {
-    width: ICON_SIZE,
-    height: ICON_SIZE,
-  },
   identity: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -225,10 +220,12 @@ const styles = StyleSheet.create({
     gap: space[12],
   },
   detailSmall: {
+    flex: 1,
     ...typography.Caption,
     color: colors.text.primary,
   },
   detail: {
+    flex: 1,
     ...typography['Body/Medium'],
     color: colors.text.primary,
   },
