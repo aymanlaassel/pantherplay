@@ -11,7 +11,7 @@ export const DURATIONS = [
 export const SKILLS = Object.values(SKILL_LEVEL_LABEL);
 export const CAMPUSES = ['MMC', 'BBC'];
 
-export const MIN_PLAYERS = 1;
+export const MIN_PLAYERS = 2;
 export const MAX_PLAYERS = 30;
 export const NOTES_MAX = 140;
 export const DURATION_MIN = 15;
