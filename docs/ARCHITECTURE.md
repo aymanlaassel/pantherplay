@@ -168,13 +168,16 @@ flowchart TD
   Discover -- "tap the bell" --> Notifications["Notifications"]
   Plus -- "opens full-screen" --> Create["Create game"]
   Create -- "Post game" --> Detail
-  Profile -- "gear icon" --> Settings["Settings<br/>(not designed)"]
-  Settings --> NotifPrefs["Notification preferences<br/>(not designed)"]
+  Discover -- "temporary test link" --> Settings["Settings"]
+  Profile -. "gear icon — later" .-> Settings
+  Settings -- "Delete account" --> DeleteAccount["Delete account<br/>type DELETE to enable placeholder action"]
+  DeleteAccount -- "Cancel / placeholder Delete" --> Settings
+  Settings -. "later ticket; row is inert" .-> NotifPrefs["Notification preferences<br/>(not implemented)"]
   Notifications -- "tap a notification" --> Detail
   MyGames["My Games<br/>(pending — no tab slot yet)"] -.-> Detail
 
   classDef pending stroke-dasharray: 5 5,color:#5A6B7D
-  class Settings,NotifPrefs,MyGames,Campus,Sports,Photo,Notif pending
+  class NotifPrefs,MyGames,Campus,Sports,Photo,Notif pending
 ```
 
 **What each screen does:**
@@ -189,11 +192,13 @@ flowchart TD
 | **Map** | A native map (`react-native-maps`, see [ADR 0004](./adr/0004-map-tab.md)) with a pin for each of today's games at the chosen campus (MMC/BBC), plus a bottom sheet listing them by start time. Tap a game once to highlight it and center the map; tap again to open Game detail. Uses mock data until the database exists. |
 | **＋** | The center tab button. Opens Create game. |
 | **Social** | The fourth tab: a Chats list (All, Groups and Unread filters) and a Friends list, with search across both. See the [scope note](./social-page-scope.md). It's a skeleton on mock data for now: real chat and friend requests aren't built yet. |
-| **Profile** | Your info and sports, plus the gear icon that opens Settings. |
+| **Profile** | Your info and sports, plus the gear icon that opens Settings (later). |
 | **Game detail** | One game: when, where, who's going, spots left, and the Join button. It opens on top of the tabs with a back button. Uses mock data until the database exists; the buttons don't join or leave yet. |
 | **Notifications** | Your list of updates (game cancelled, spot opened). Opened from the bell on Home. |
 | **Create game** | The full-screen form to host a game. Posting it opens the new game's detail page. |
-| **Settings / Notification preferences** | Account options (sign out, delete account, blocked users) and which notifications you get. Not designed yet. |
+| **Settings** | Pushed page with a mock profile, Account, Preferences, Privacy & Safety, Support, a placeholder Sign out, and Delete account. Terms & Privacy Policy opens a placeholder browser URL. Unfinished rows do nothing. Temporarily opened from Discover; Profile gear comes later. |
+| **Delete account** | Warning and deleted-data list, exact DELETE confirmation, and Cancel. The enabled Delete action only goes back; no data is deleted. |
+| **Notification preferences** | Designed, but implementation is a later ticket. Settings does not navigate here yet. |
 | **My Games** | Games you've joined or host. Pending: it has no tab slot yet. |
 
 ---

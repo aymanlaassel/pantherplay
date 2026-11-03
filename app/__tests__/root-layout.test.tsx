@@ -13,8 +13,8 @@ jest.mock('react-native-worklets', () => require('react-native-worklets/src/mock
 // The navigator itself is not under test; render a marker instead.
 jest.mock('expo-router', () => {
   const { Text } = jest.requireActual('react-native');
-  const Stack = () => <Text>app</Text>;
-  Stack.Screen = () => null;
+  const Stack = ({ children }: { children: import('react').ReactNode }) => <><Text>app</Text>{children}</>;
+  Stack.Screen = ({ name, options }: { name: string; options: { headerShown?: boolean } }) => <Text testID={`route-${name}`}>{JSON.stringify(options)}</Text>;
   return { Stack };
 });
 
@@ -52,4 +52,12 @@ test.each([
   // The splash overlay hides the native splash once it has laid out over the loaded app.
   await fireEvent(screen.getByTestId('splash-overlay'), 'layout');
   expect(SplashScreen.hideAsync).toHaveBeenCalledTimes(1);
+});
+
+test('registers Settings and Delete account as pushed screens with custom headers', async () => {
+  mockUseFonts.mockReturnValue([true, null]);
+  await render(<RootLayout />);
+  for (const route of ['settings/index', 'settings/delete-account']) {
+    expect(JSON.parse(screen.getByTestId(`route-${route}`).props.children)).toEqual({ headerShown: false });
+  }
 });

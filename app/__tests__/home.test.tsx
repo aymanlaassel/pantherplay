@@ -99,3 +99,9 @@ test('the web Map tab shows a note instead of loading react-native-maps', async 
   await render(<MapWeb />);
   expect(screen.getByText('The map is available in the mobile app.')).toBeTruthy();
 });
+
+test('the temporary Settings test link pushes Settings', async () => {
+  await render(<DiscoverScreen />);
+  await fireEvent.press(screen.getByRole('button', { name: 'Settings (test link)' }));
+  expect(router.push).toHaveBeenCalledWith('/settings');
+});

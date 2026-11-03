@@ -1,6 +1,6 @@
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { FlatList, StyleSheet, Text, View } from 'react-native';
+import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { CampusToggle, type Campus } from '@/components/campus-toggle';
@@ -30,6 +30,9 @@ export default function DiscoverScreen() {
         hasUnread={MOCK_NOTIFICATIONS.some((n) => n.unread)}
         onBellPress={() => router.push('/notifications')}
       />
+      <Pressable onPress={() => router.push('/settings')} accessibilityRole="button" accessibilityLabel="Settings (test link)" style={styles.settingsLink}>
+        <Text style={styles.settingsLabel}>Settings (test link)</Text>
+      </Pressable>
       <CampusToggle value={campus} onChange={setCampus} style={styles.campus} />
       <SearchBar activeFilters={active} onFilterPress={() => setFiltering(true)} />
       <DateChips />
@@ -69,6 +72,8 @@ const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.bg.screen },
   list: { paddingHorizontal: space[16], paddingBottom: space[20], gap: space[16] },
   top: { gap: space[16] },
+  settingsLink: { minHeight: 44, justifyContent: 'center', alignSelf: 'flex-end' },
+  settingsLabel: { ...typography['Body/Medium'], color: colors.text.primary },
   campus: { alignSelf: 'flex-start' },
   empty: { ...typography['Body/Regular'], color: colors.text.muted, textAlign: 'center' },
 });
