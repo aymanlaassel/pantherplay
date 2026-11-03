@@ -27,8 +27,8 @@ export default function RootLayout() {
       <AnimatedSplashOverlay />
       <Stack>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="game/[id]" />
-        <Stack.Screen name="notifications" />
+        <Stack.Screen name="game/[id]" options={{ headerShown: false }} />
+        <Stack.Screen name="notifications" options={{ headerShown: false }} />
         <Stack.Screen name="game/create" options={{ presentation: 'fullScreenModal', headerShown: false }} />
       </Stack>
     </>

@@ -4,11 +4,11 @@ import MapView, { Marker } from 'react-native-maps';
 import { router } from 'expo-router';
 
 import { BadgeStatus } from '@/components/badge-status';
+import { CampusToggle, type Campus } from '@/components/campus-toggle';
 import { MapGamePin } from '@/components/map-game-pin';
 import { MapGameRow } from '@/components/map-game-row';
 import { colors, radius, space, typography } from '@/theme';
-
-type Campus = 'MMC' | 'BBC';
+import { todayAt } from '@/mock/today-at';
 
 type Game = {
   id: string;
@@ -31,13 +31,7 @@ type Location = {
 // TODO: for asad's brainstorm: can pass image prop on marker, for custom marker
 // TODO: for asad's brainstorm: callout element when marker pressed?
 
-// Mock games happen today at the given hour, so they always pass the "today" filter.
-const todayAt = (hour: number) => {
-  const date = new Date();
-  date.setHours(hour, 0, 0, 0);
-  return date.toISOString();
-};
-
+// Ids 1 to 3 are the same games on Home, Map and Game detail.
 const mockGames: Game[] = [
   {
     id: '1',
@@ -49,19 +43,19 @@ const mockGames: Game[] = [
   },
   {
     id: '2',
-    name: 'Friday 5v5 Pickup',
+    name: 'Pickup Basketball',
     sport: 'basketball',
     location_id: 'l-rec',
     spots_left: 1,
-    starts_at: todayAt(18),
+    starts_at: todayAt(18, 30),
   },
   {
     id: '3',
-    name: 'Friday 3v3 Pickup',
-    sport: 'basketball',
+    name: 'Sand Volleyball',
+    sport: 'volleyball',
     location_id: 'l-bbc',
-    spots_left: 1,
-    starts_at: todayAt(20),
+    spots_left: 5,
+    starts_at: todayAt(17),
   },
 ];
 
@@ -99,8 +93,6 @@ const CAMPUS_REGIONS = {
   MMC: { latitude: 25.7563, longitude: -80.3755, latitudeDelta: 0.012, longitudeDelta: 0.012 },
   BBC: { latitude: 25.9107, longitude: -80.1392, latitudeDelta: 0.012, longitudeDelta: 0.012 },
 };
-
-const CAMPUSES: Campus[] = ['MMC', 'BBC'];
 
 const SPORT_EMOJI = { soccer: '⚽', basketball: '🏀', volleyball: '🏐' };
 
@@ -169,31 +161,11 @@ export default function MapScreen() {
         })}
       </MapView>
 
-      <View
-        style={{
-          position: 'absolute',
-          top: space[12],
-          left: space[12],
-          flexDirection: 'row',
-          padding: space[4],
-          backgroundColor: colors.bg.surface,
-          borderRadius: radius.pill,
-        }}>
-        {CAMPUSES.map((option) => (
-          <Pressable
-            key={option}
-            onPress={() => switchCampus(option)}
-            style={{ paddingHorizontal: space[16], paddingVertical: space[8] }}>
-            <Text
-              style={{
-                ...(campus === option ? typography['Body/Strong'] : typography['Body/Medium']),
-                color: campus === option ? colors.text.primary : colors.text.muted,
-              }}>
-              {option}
-            </Text>
-          </Pressable>
-        ))}
-      </View>
+      <CampusToggle
+        value={campus}
+        onChange={switchCampus}
+        style={{ position: 'absolute', top: space[12], left: space[12] }}
+      />
 
       <View
         style={{

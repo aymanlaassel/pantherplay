@@ -29,16 +29,16 @@ test('starts on MMC and lists only its games, earliest first', async () => {
   expect(screen.getByText('Games near MMC')).toBeTruthy();
   expect(screen.getByText('2 games today · sorted by start time')).toBeTruthy();
 
-  const titles = screen.getAllByText(/Friday 5v5 Pickup|5v5 Soccer/).map((t) => t.props.children);
-  expect(titles).toEqual(['Friday 5v5 Pickup', '5v5 Soccer']);
-  expect(screen.queryByText('Friday 3v3 Pickup')).toBeNull();
+  const titles = screen.getAllByText(/Pickup Basketball|5v5 Soccer/).map((t) => t.props.children);
+  expect(titles).toEqual(['Pickup Basketball', '5v5 Soccer']);
+  expect(screen.queryByText('Sand Volleyball')).toBeNull();
 });
 
 test('switching to BBC shows BBC games instead', async () => {
   await render(<MapScreen />);
   await fireEvent.press(screen.getByText('BBC'));
   expect(screen.getByText('Games near BBC')).toBeTruthy();
-  expect(screen.getByText('Friday 3v3 Pickup')).toBeTruthy();
+  expect(screen.getByText('Sand Volleyball')).toBeTruthy();
   expect(screen.queryByText('5v5 Soccer')).toBeNull();
 });
 
