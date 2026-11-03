@@ -158,7 +158,7 @@ test('footer shows the summary once the form is valid', async () => {
   await render(<CreateGameScreen />);
   await fireEvent.press(screen.getByText('Soccer'));
   await fireEvent.changeText(screen.getByLabelText('Location'), 'Panther Field');
-  expect(screen.getByText(/^Soccer - .* - Panther Field - 1 player$/)).toBeTruthy();
+  expect(screen.getByText(/^Soccer - .* - Panther Field - 2 players$/)).toBeTruthy();
 });
 
 describe('on Android', () => {

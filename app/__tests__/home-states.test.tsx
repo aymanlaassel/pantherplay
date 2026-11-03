@@ -37,3 +37,12 @@ test('shows the empty message when there are no games', async () => {
   await render(<DiscoverScreen />);
   expect(screen.getByText('No games today. Be the first to post one.')).toBeTruthy();
 });
+
+test('a 60-character title and a day with 47 games both render', async () => {
+  const title = 'A'.repeat(60);
+  const games = Array.from({ length: 47 }, (_, i) => ({ ...MOCK_GAMES[0], id: `g${i}`, title: i === 0 ? title : `Game ${i}` }));
+  load.mockResolvedValueOnce(games);
+  await render(<DiscoverScreen />);
+  expect(screen.getByText(title)).toBeTruthy();
+  expect(screen.getByText('Game 1')).toBeTruthy();
+});
