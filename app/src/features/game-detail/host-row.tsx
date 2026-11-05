@@ -1,8 +1,8 @@
 import { StyleSheet, Text, View } from 'react-native';
 
+import { InitialsAvatar } from '@/components/initials-avatar';
 import { colors, space, typography } from '@/theme';
 
-import { InitialsAvatar } from './initials-avatar';
 import type { GameDetail } from './mock-games';
 
 export function HostRow({ host }: Pick<GameDetail, 'host'>) {

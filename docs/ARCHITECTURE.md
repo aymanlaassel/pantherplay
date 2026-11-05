@@ -91,8 +91,8 @@ flowchart TB
   Repo --> Server["server/<br/>Express + Prisma<br/>(pending: keep or remove)"]
 
   AppProj --> Screens["src/app/<br/>one file = one screen<br/>(Expo Router)"]
-  AppProj --> Comp["src/components/<br/>Button, Chip, Icon, CampusToggle,<br/>SpotsBar, Field, Stepper, Textarea…<br/>(same names as Figma)"]
-  AppProj --> Feat["src/features/<br/>one screen's own pieces<br/>(create-game/, home/, game-detail/)"]
+  AppProj --> Comp["src/components/<br/>Button, Chip, Icon, CampusToggle,<br/>SpotsBar, Field, Stepper, Textarea, TabBar…<br/>(same names as Figma)"]
+  AppProj --> Feat["src/features/<br/>one screen's own pieces<br/>(create-game/, home/, game-detail/, profile/)"]
   AppProj --> Theme["src/theme/<br/>colors, fonts, spacing"]
   AppProj --> Api["src/api/<br/>functions that read/write data"]
   AppProj --> Lib["src/lib/"]
@@ -100,7 +100,7 @@ flowchart TB
   Screens --> AuthScreens["(auth)/<br/>welcome, sign-in"]
   Screens --> Onb["(onboarding)/<br/>campus, sports, photo, notifications"]
   Screens --> Tabs["(tabs)/<br/>discover, profile, …"]
-  Screens --> Pushed["game/[id] · game/create · notifications"]
+  Screens --> Pushed["game/[id] · game/create · notifications · settings"]
 
   Lib --> AuthTs["auth.ts ⚠️<br/>the ONLY file that knows<br/>about Google sign-in"]
   Lib --> Client["supabase.ts<br/>database client"]
@@ -126,7 +126,7 @@ flowchart TB
 | `app/` | The whole phone app (the Expo project), with its own `package.json` and assets. Run `npx expo start` from here. |
 | `app/src/app/` | **Screens.** Each file is one screen, and its path becomes the screen's address: `game/[id].tsx` is the Game detail page for any game id. Folders in parentheses like `(auth)` group screens without changing the address. A `_layout.tsx` file wraps a group (the tab bar, the auth gate). |
 | `app/src/components/` | Reusable building blocks that many screens share (buttons, chips, icons). Named like the Figma components, so designers and developers mean the same thing. |
-| `app/src/features/` | Pieces that belong to one screen only, too specific to be shared components. `create-game/` holds the Create game form: its sections, pickers, validation rules and form state. `home/` holds Discover's header, search bar, date chips, game card and filter modal. `game-detail/` holds the sections of the Game detail page. |
+| `app/src/features/` | Pieces that belong to one screen only, too specific to be shared components. `create-game/` holds the Create game form: its sections, pickers, validation rules and form state. `home/` holds Discover's header, search bar, date chips, game card and filter modal. `game-detail/` holds the sections of the Game detail page. `profile/` holds the Profile tab's sections. |
 | `app/src/theme/` | Colors, fonts, text styles, spacing and radius in one place, mirroring the Figma variables. Components use names like `colors.text.primary` (Figma `text/primary`), never hex codes, so changing a color is one edit. Light mode only. |
 | `app/src/api/` | The only place screens get data from: small functions like `listGames()` or `joinGame(id)` that call Supabase, so screens never write database queries themselves. |
 | `app/src/lib/supabase.ts` | Creating the one Supabase connection the whole app shares. |
@@ -168,8 +168,7 @@ flowchart TD
   Discover -- "tap the bell" --> Notifications["Notifications"]
   Plus -- "opens full-screen" --> Create["Create game"]
   Create -- "Post game" --> Detail
-  Discover -- "temporary test link" --> Settings["Settings"]
-  Profile -. "gear icon — later" .-> Settings
+  Profile -- "gear icon" --> Settings["Settings"]
   Settings -- "Delete account" --> DeleteAccount["Delete account<br/>type DELETE to enable placeholder action"]
   DeleteAccount -- "Cancel / placeholder Delete" --> Settings
   Settings -. "later ticket; row is inert" .-> NotifPrefs["Notification preferences<br/>(not implemented)"]
@@ -188,15 +187,15 @@ flowchart TD
 | **Sign in** | One "Continue with Google" button for both new and returning users. |
 | **New user?** | Not a screen. The app checks whether this person has finished onboarding (see diagram 4). |
 | **Onboarding 1–4** | One-time setup for new users: home campus, sports and skill level, profile photo, and permission to send notifications (explained first, then the phone's own prompt). |
-| **Discover / Home** | The live board: a campus toggle (MMC/BBC, same as Map), date chips, a search bar and game cards with a spots bar, plus a filter modal for sport, time and skill level. The main screen. Uses mock data until the database exists; search and the date chips don't filter yet. |
+| **Discover / Home** | The live board: a campus toggle (MMC/BBC, same as Map), date chips, a search bar and game cards with a spots bar, plus a filter modal for sport, time and skill level. Shows a spinner while games load, an error with Try again if they fail, and "No games today" when there are none. The main screen. Uses mock data until the database exists; search and the date chips don't filter yet. |
 | **Map** | A native map (`react-native-maps`, see [ADR 0004](./adr/0004-map-tab.md)) with a pin for each of today's games at the chosen campus (MMC/BBC), plus a bottom sheet listing them by start time. Tap a game once to highlight it and center the map; tap again to open Game detail. Uses mock data until the database exists. |
 | **＋** | The center tab button. Opens Create game. |
 | **Social** | The fourth tab: a Chats list (All, Groups and Unread filters) and a Friends list, with search across both. See the [scope note](./social-page-scope.md). It's a skeleton on mock data for now: real chat and friend requests aren't built yet. |
-| **Profile** | Your info and sports, plus the gear icon that opens Settings (later). |
+| **Profile** | Your photo or initials, name and username, your scheduled game, win/loss record and reliability, plus the gear icon that opens Settings. Uses mock data until the database exists; Edit profile doesn't do anything yet. |
 | **Game detail** | One game: when, where, who's going, spots left, and the Join button. It opens on top of the tabs with a back button. Uses mock data until the database exists; the buttons don't join or leave yet. |
 | **Notifications** | Your list of updates (game cancelled, spot opened). Opened from the bell on Home. |
 | **Create game** | The full-screen form to host a game. Posting it opens the new game's detail page. |
-| **Settings** | Pushed page with a mock profile, Account, Preferences, Privacy & Safety, Support, a placeholder Sign out, and Delete account. Terms & Privacy Policy opens a placeholder browser URL. Unfinished rows do nothing. Temporarily opened from Discover; Profile gear comes later. |
+| **Settings** | Opened from the gear on Profile. A mock profile, Account, Preferences, Privacy & Safety, Support, a placeholder Sign out, and Delete account. Terms & Privacy Policy opens a placeholder browser URL. Unfinished rows do nothing. |
 | **Delete account** | Warning and deleted-data list, exact DELETE confirmation, and Cancel. The enabled Delete action only goes back; no data is deleted. |
 | **Notification preferences** | Designed, but implementation is a later ticket. Settings does not navigate here yet. |
 | **My Games** | Games you've joined or host. Pending: it has no tab slot yet. |
@@ -229,7 +228,6 @@ flowchart TD
 | **Save profile** | Saving the onboarding answers and stamping `onboarding_completed_at` with the current time, so the next launch goes straight to Discover. |
 
 This check lives in the root layout, `app/src/app/_layout.tsx`, which every screen passes through.
-d
 ---
 
 ## 5. The database
@@ -446,7 +444,7 @@ flowchart LR
 |---|---|
 | **Your laptop / branch** | Your own copy of the code. A branch is a separate line of work, so you can't break `main` while you build. |
 | **Pull Request (PR)** | Asking to merge your branch into `main`. It's where teammates see your changes and comment. |
-| **CI checks** | Automatic checks on every PR: lint (style mistakes), typecheck (TypeScript errors) and tests. Not set up yet. |
+| **CI checks** | Automatic checks on every PR: lint (style mistakes), typecheck (TypeScript errors) and tests. Set up in `.github/workflows/ci.yml`. |
 | **Review** | One teammate reads your code within 24 hours and approves it or asks for changes. |
 | **Merge to main** | Adding your change to `main`, the shared working version that everyone branches from. |
 | **EAS Build** | Expo's cloud service that turns the code into real iPhone and Android apps. |

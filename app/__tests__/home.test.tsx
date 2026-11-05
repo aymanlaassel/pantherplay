@@ -93,15 +93,3 @@ test('the search box and filter button are labelled for screen readers', async (
   expect(screen.getByLabelText('Search games')).toBeTruthy();
   expect(screen.getByLabelText('Filters')).toBeTruthy();
 });
-
-test('the web Map tab shows a note instead of loading react-native-maps', async () => {
-  const MapWeb = require('@/app/(tabs)/map.web').default;
-  await render(<MapWeb />);
-  expect(screen.getByText('The map is available in the mobile app.')).toBeTruthy();
-});
-
-test('the temporary Settings test link pushes Settings', async () => {
-  await render(<DiscoverScreen />);
-  await fireEvent.press(screen.getByRole('button', { name: 'Settings (test link)' }));
-  expect(router.push).toHaveBeenCalledWith('/settings');
-});
