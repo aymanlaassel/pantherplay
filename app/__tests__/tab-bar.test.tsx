@@ -54,8 +54,23 @@ test('selected state follows the focused route', async () => {
   for (const name of ['Discover', 'Map', 'Profile']) {
     expect(screen.getByRole('tab', { name, selected: false })).toBeTruthy();
   }
-  expect(screen.getByText('Social')).toHaveStyle({ color: colors.brand.gold });
-  expect(screen.getByText('Map')).toHaveStyle({ color: colors.text.inverse });
+  expect(screen.getByText('Social')).toHaveStyle({ color: colors.text.primary });
+  expect(screen.getByText('Map')).toHaveStyle({ color: colors.text.muted });
+});
+
+test('only the selected tab shows the gold dot', async () => {
+  await render(<TabBar {...fakeProps(1).props} />);
+  const dotColor = (route: string) =>
+    (flat(screen.getByTestId(`tab-dot-${route}`)) as { backgroundColor?: string }).backgroundColor;
+  expect(dotColor('map')).toBe(colors.brand.gold);
+  for (const route of ['index', 'social', 'profile']) expect(dotColor(route)).toBeUndefined();
+});
+
+test('the bar is a white floating pill with a navy [+] labelled Post', async () => {
+  await render(<TabBar {...fakeProps().props} />);
+  expect(flat(screen.getByTestId('tab-bar-pill'))).toMatchObject({ backgroundColor: colors.bg.surface });
+  expect(flat(screen.getByRole('button', { name: 'Create game' }))).toMatchObject({ backgroundColor: colors.bg.brand });
+  expect(screen.getByText('Post')).toBeTruthy();
 });
 
 test('pressing an unfocused tab emits tabPress and navigates', async () => {
