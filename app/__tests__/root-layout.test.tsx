@@ -22,7 +22,10 @@ jest.mock('expo-router', () => {
       {children}
     </>
   );
-  Stack.Screen = ({ name }: { name: string }) => <Text>{`screen:${name}`}</Text>;
+  // `options` rides along as a prop so tests can read a screen's options from its testID.
+  Stack.Screen = ({ name, options }: { name: string; options?: object }) => (
+    <Text testID={`route-${name}`} {...{ options }}>{`screen:${name}`}</Text>
+  );
   Stack.Protected = ({ guard, children }: { guard: boolean; children: React.ReactNode }) => (guard ? children : null);
   return { Stack };
 });
@@ -117,5 +120,13 @@ describe('auth gate', () => {
     await render(<RootLayout />);
     await screen.unmount();
     expect(stop).toHaveBeenCalled();
+  });
+
+  test('registers Settings and Delete account as pushed screens with custom headers', async () => {
+    mockGetSession.mockResolvedValue(SESSION);
+    await render(<RootLayout />);
+    for (const route of ['settings/index', 'settings/delete-account']) {
+      expect(screen.getByTestId(`route-${route}`).props.options).toEqual({ headerShown: false });
+    }
   });
 });

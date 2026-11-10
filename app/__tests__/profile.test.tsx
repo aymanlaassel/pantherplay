@@ -2,7 +2,6 @@ import { router } from 'expo-router';
 import { fireEvent, render, screen } from '@testing-library/react-native';
 
 import ProfileScreen from '@/app/(tabs)/profile';
-import SettingsScreen from '@/app/settings/index';
 import { BADGE_STATUS_LABEL } from '@/components/badge-status';
 import { ProfileContent, profileInitials } from '@/features/profile/profile-content';
 import { signOut } from '@/lib/auth';
@@ -105,15 +104,6 @@ test('the Joined badge shows only when the user joined', async () => {
 test('there is no dark-mode button', async () => {
   await render(<ProfileScreen />);
   expect(screen.queryByLabelText(/dark mode/i)).toBeNull();
-});
-
-test('the Settings placeholder renders and Back goes back', async () => {
-  await render(<SettingsScreen />);
-  expect(screen.getByText('Settings')).toBeTruthy();
-  expect(screen.getByText('Coming soon')).toBeTruthy();
-
-  await fireEvent.press(screen.getByRole('button', { name: 'Back' }));
-  expect(router.back).toHaveBeenCalledTimes(1);
 });
 
 test('the temporary Sign out button signs out (the auth gate then shows Welcome)', async () => {

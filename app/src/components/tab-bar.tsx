@@ -1,4 +1,5 @@
-// Figma: Tab bar (87:71), Tab/Item (87:70) and Button/Create (86:6). The app's bottom navigation.
+// Figma: Tab bar (87:71), Tab/Item (87:70) and Button/Create (86:6). The app's bottom navigation:
+// a floating white pill, gray tabs, the selected tab in navy with a gold dot, and a raised navy [+].
 import { router } from 'expo-router';
 import type { BottomTabBarProps } from 'expo-router/js-tabs';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
@@ -9,6 +10,7 @@ import { colors, radius, space, typography } from '@/theme';
 
 // The [+] is a route so the layout keeps its slot, but it opens Create game and is never selected.
 const CREATE_ROUTE = 'create-button';
+const CREATE_LABEL = 'Post';
 
 const TAB_ICONS: Record<string, IconName> = {
   index: 'search',
@@ -20,9 +22,9 @@ const TAB_ICONS: Record<string, IconName> = {
 const ICON_SIZE = 24;
 const CREATE_SIZE = 56;
 const CREATE_ICON_SIZE = 28;
+// How far the [+] circle pokes above the pill.
 const CREATE_RAISE = space[16];
-const UNDERLINE_WIDTH = 28;
-const UNDERLINE_HEIGHT = 3;
+const DOT_SIZE = 5;
 
 export function TabBar({ state, descriptors, emitter, navigateToTab }: BottomTabBarProps) {
   const insets = useSafeAreaInsets();
@@ -32,8 +34,7 @@ export function TabBar({ state, descriptors, emitter, navigateToTab }: BottomTab
       testID="tab-bar"
       accessibilityRole="tablist"
       style={[styles.bar, { paddingBottom: Math.max(insets.bottom, space[8]) }]}>
-      <View style={styles.background} />
-      <View style={styles.row}>
+      <View testID="tab-bar-pill" style={styles.pill}>
         {state.routes.map((route, index) => {
           if (route.name === CREATE_ROUTE) {
             return (
@@ -44,8 +45,9 @@ export function TabBar({ state, descriptors, emitter, navigateToTab }: BottomTab
                   accessibilityLabel="Create game"
                   accessibilityState={{ selected: false }}
                   style={styles.create}>
-                  <Icon name="plus" color={colors.icon.active} size={CREATE_ICON_SIZE} />
+                  <Icon name="plus" color={colors.icon.inverse} size={CREATE_ICON_SIZE} />
                 </Pressable>
+                <Text style={styles.label}>{CREATE_LABEL}</Text>
               </View>
             );
           }
@@ -70,10 +72,10 @@ export function TabBar({ state, descriptors, emitter, navigateToTab }: BottomTab
               accessibilityLabel={label}
               accessibilityState={{ selected: focused }}
               style={styles.item}>
-              <Icon name={icon} color={focused ? colors.brand.gold : colors.icon.inverse} size={ICON_SIZE} />
+              <Icon name={icon} color={focused ? colors.icon.active : colors.icon.muted} size={ICON_SIZE} />
               <Text style={[styles.label, focused && styles.labelActive]}>{label}</Text>
               {/* Always laid out, so labels don't shift when the selected tab changes. */}
-              <View style={[styles.underline, focused && styles.underlineActive]} />
+              <View testID={`tab-dot-${route.name}`} style={[styles.dot, focused && styles.dotActive]} />
             </Pressable>
           );
         })}
@@ -83,34 +85,44 @@ export function TabBar({ state, descriptors, emitter, navigateToTab }: BottomTab
 }
 
 const styles = StyleSheet.create({
-  // The whole bar, raised [+] included, sits in the layout, so React Navigation
-  // keeps screens above it and the circle can never cover their content.
-  bar: { backgroundColor: colors.bg.screen },
-  background: {
-    ...StyleSheet.absoluteFill,
-    top: CREATE_RAISE,
-    backgroundColor: colors.bg.brand,
-    borderRadius: radius.card,
+  // The bar stays in the layout (not absolutely positioned), so React Navigation
+  // keeps screens above it and the pill or the raised [+] never cover their content.
+  bar: {
+    backgroundColor: colors.bg.screen,
+    paddingHorizontal: space[16],
+    paddingTop: CREATE_RAISE + space[4],
   },
-  row: { flexDirection: 'row' },
+  pill: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    backgroundColor: colors.bg.surface,
+    borderRadius: radius.pill,
+    paddingHorizontal: space[8],
+    paddingBottom: space[8],
+    shadowColor: colors.bg.brand,
+    shadowOpacity: 0.12,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 8,
+  },
   item: {
     flex: 1,
     minHeight: 44,
-    marginTop: CREATE_RAISE,
-    paddingTop: space[8],
+    paddingTop: space[12],
     alignItems: 'center',
     gap: space[4],
   },
-  label: { ...typography.Caption, color: colors.text.inverse },
-  labelActive: { color: colors.brand.gold },
-  underline: { width: UNDERLINE_WIDTH, height: UNDERLINE_HEIGHT, borderRadius: radius.pill },
-  underlineActive: { backgroundColor: colors.brand.gold },
-  createSlot: { flex: 1, alignItems: 'center' },
+  label: { ...typography.Caption, color: colors.text.muted },
+  labelActive: { ...typography.Label, color: colors.text.primary },
+  dot: { width: DOT_SIZE, height: DOT_SIZE, borderRadius: radius.pill },
+  dotActive: { backgroundColor: colors.brand.gold },
+  // The circle is pulled up so it rises above the top edge of the pill.
+  createSlot: { flex: 1, alignItems: 'center', gap: space[4], marginTop: -CREATE_RAISE },
   create: {
     width: CREATE_SIZE,
     height: CREATE_SIZE,
     borderRadius: radius.pill,
-    backgroundColor: colors.brand.gold,
+    backgroundColor: colors.bg.brand,
     alignItems: 'center',
     justifyContent: 'center',
   },
