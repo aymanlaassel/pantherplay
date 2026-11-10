@@ -1,21 +1,26 @@
 // Figma: Screen/Home game card. Photo, title and status, host, place, level, time, price and Join.
 import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 
+import type { Game } from '@/api/types';
 import { BadgeLevel } from '@/components/badge-level';
 import { ButtonJoin } from '@/components/button-join';
 import { SpotsBar } from '@/components/spots-bar';
-import { formatTimeRange } from '@/lib/format-time';
+import { endsAt, formatTimeRange } from '@/lib/format-time';
 import { colors, radius, space, typography } from '@/theme';
 
 import { Icon } from '@/components/icon';
-import type { HomeGame } from './mock-games';
 
-const STATUS_LABEL: Record<NonNullable<HomeGame['status']>, string> = { confirmed: 'Confirmed', joined: 'Joined' };
+function statusLabel(game: Game): string | null {
+  if (game.myStatus === 'joined') return 'Joined';
+  if (game.myStatus === 'waitlisted') return 'Waitlisted';
+  return game.status === 'confirmed' ? 'Confirmed' : null;
+}
 
-type GameCardProps = { game: HomeGame; onPress: () => void };
+type GameCardProps = { game: Game; onPress: () => void };
 
 export function GameCard({ game, onPress }: GameCardProps) {
-  const spotsLeft = game.max - game.filled;
+  const spotsLeft = game.maxPlayers - game.spotsFilled;
+  const status = statusLabel(game);
   return (
     <Pressable onPress={onPress} accessibilityRole="button" style={styles.card}>
       <Image
@@ -25,30 +30,30 @@ export function GameCard({ game, onPress }: GameCardProps) {
       />
       <View style={styles.body}>
         <View style={styles.row}>
-          <Text style={styles.title}>{game.title}</Text>
-          {game.status ? (
+          <Text style={styles.title}>{game.sport}</Text>
+          {status ? (
             <View style={styles.status}>
               <Icon name="check" color={colors.text.success} size={14} />
-              <Text style={styles.confirmed}>{STATUS_LABEL[game.status]}</Text>
+              <Text style={styles.confirmed}>{status}</Text>
             </View>
           ) : null}
         </View>
-        <Text style={styles.host}>{`Hosted by ${game.host}`}</Text>
+        <Text style={styles.host}>{`Hosted by ${game.host.fullName}`}</Text>
         <View style={styles.place}>
           <Icon name="pin" color={colors.icon.muted} size={16} />
-          <Text style={styles.muted}>{game.location}</Text>
+          <Text style={styles.muted}>{game.location.name}</Text>
         </View>
         <View style={styles.row}>
-          <BadgeLevel level={game.level} />
+          <BadgeLevel level={game.skillLevel} />
           <Text style={styles.spots}>{`${spotsLeft} ${spotsLeft === 1 ? 'spot' : 'spots'} left!`}</Text>
         </View>
-        <SpotsBar filled={game.filled} max={game.max} />
+        <SpotsBar filled={game.spotsFilled} max={game.maxPlayers} />
         <View style={styles.row}>
-          <Text style={styles.time}>{formatTimeRange(game.startsAt, game.endsAt)}</Text>
-          <Text style={styles.price}>{game.price}</Text>
+          <Text style={styles.time}>{formatTimeRange(game.startsAt, endsAt(game.startsAt, game.durationMinutes))}</Text>
+          <Text style={styles.price}>Free</Text>
         </View>
         <View style={styles.divider} />
-        <ButtonJoin label={game.status === 'joined' ? 'View game' : 'Join game'} onPress={onPress} />
+        <ButtonJoin label={game.myStatus ? 'View game' : 'Join game'} onPress={onPress} />
       </View>
     </Pressable>
   );

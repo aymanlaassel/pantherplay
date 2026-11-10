@@ -1,16 +1,16 @@
 // The Home filter sheet: a bottom sheet over a dimmed backdrop, opened by the search bar's filter button.
 import { Modal, Pressable, StyleSheet, View } from 'react-native';
 
+import type { Game } from '@/api/types';
 import { colors } from '@/theme';
 
 import { FilterSheet } from './filter-sheet';
 import type { Filters } from './filters';
-import type { HomeGame } from './mock-games';
 
 type FilterModalProps = {
   visible: boolean;
   filters: Filters;
-  games: HomeGame[];
+  games: Game[];
   onApply: (filters: Filters) => void;
   onClose: () => void;
 };

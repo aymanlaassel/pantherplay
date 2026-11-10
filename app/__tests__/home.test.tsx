@@ -3,10 +3,15 @@ import { fireEvent, render, screen } from '@testing-library/react-native';
 
 import DiscoverScreen from '@/app/(tabs)/index';
 import { greetingFor, HomeHeader } from '@/features/home/home-header';
-import { MOCK_GAMES } from '@/features/home/mock-games';
+import { mockGames, resetMockGames } from '@/mock/games';
 
-jest.mock('expo-router', () => ({ router: { push: jest.fn() } }));
+jest.mock('expo-router', () => ({ router: { push: jest.fn() }, useFocusEffect: (effect: () => void) => require('react').useEffect(effect, [effect]) }));
 jest.mock('react-native-safe-area-context', () => require('react-native-safe-area-context/jest/mock').default);
+jest.mock('@/api/delay', () => ({ delay: () => Promise.resolve() }));
+
+// The three games these tests were written against.
+const GAMES = mockGames().filter((game) => ['1', '2', '3'].includes(game.id));
+beforeEach(() => resetMockGames(GAMES));
 
 beforeEach(() => (router.push as jest.Mock).mockClear());
 
@@ -20,12 +25,12 @@ test('shows the greeting', async () => {
 
 test('a card opens that game', async () => {
   await render(<DiscoverScreen />);
-  await fireEvent.press(screen.getByText(MOCK_GAMES[1].title));
-  expect(router.push).toHaveBeenCalledWith(`/game/${MOCK_GAMES[1].id}`);
+  await fireEvent.press(screen.getByText(GAMES[1].sport));
+  expect(router.push).toHaveBeenCalledWith(`/game/${GAMES[1].id}`);
 });
 
 test('the campus toggle starts on MMC and switches to that campus\'s games', async () => {
-  const titles = (campus: string) => MOCK_GAMES.filter((game) => game.campus === campus).map((game) => game.title);
+  const titles = (campus: string) => GAMES.filter((game) => game.location.campus === campus).map((game) => game.sport);
   await render(<DiscoverScreen />);
   expect(screen.getByRole('button', { name: 'MMC', selected: true })).toBeTruthy();
   for (const title of titles('MMC')) expect(screen.getByText(title)).toBeTruthy();
@@ -48,7 +53,7 @@ test('each card shows a spots bar that matches its spots left', async () => {
 test('the Join button on a card opens that game', async () => {
   await render(<DiscoverScreen />);
   await fireEvent.press(screen.getAllByRole('button', { name: 'Join game' })[0]);
-  expect(router.push).toHaveBeenCalledWith(`/game/${MOCK_GAMES[0].id}`);
+  expect(router.push).toHaveBeenCalledWith(`/game/${GAMES[0].id}`);
 });
 
 test('cards only show the status their game has', async () => {

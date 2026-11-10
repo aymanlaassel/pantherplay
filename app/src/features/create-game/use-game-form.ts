@@ -1,7 +1,11 @@
+import { router } from 'expo-router';
 import { useState } from 'react';
+
+import { createGame } from '@/api/games';
 
 import { CAMPUSES, DURATIONS, MIN_PLAYERS, SKILLS } from './options';
 import { summarize } from './summarize';
+import { toNewGame } from './to-new-game';
 import { validateGame, type GameErrors, type GameForm } from './validate';
 
 function nextHour(): Date {
@@ -42,6 +46,8 @@ export function useGameForm() {
   const [form, setForm] = useState(initial);
   const [start] = useState(form);
   const [attempted, setAttempted] = useState(false);
+  const [posting, setPosting] = useState(false);
+  const [failed, setFailed] = useState(false);
 
   const set = <K extends keyof GameForm>(key: K, value: GameForm[K]) =>
     setForm((current) => ({ ...current, [key]: value }));
@@ -51,14 +57,27 @@ export function useGameForm() {
   const shown: GameErrors = attempted ? errors : { ...errors, ...Object.fromEntries(QUIET.map((k) => [k, undefined])) };
   const missing = keys.map((key) => STATUS_NAME[key]);
 
-  // Posting is out of scope for now; returns whether the form is valid.
-  const submit = () => {
+  // Posts the game and opens its page; says why it stopped if it did.
+  const submit = async (): Promise<'invalid' | 'failed' | 'posted'> => {
     setAttempted(true);
-    return keys.length === 0;
+    if (keys.length) return 'invalid';
+    setPosting(true);
+    setFailed(false);
+    try {
+      const game = await createGame(toNewGame(form));
+      router.replace(`/game/${game.id}`);
+      return 'posted';
+    } catch {
+      setFailed(true);
+      return 'failed';
+    } finally {
+      setPosting(false);
+    }
   };
 
-  const status = missing.length ? `Still needed: ${missing.join(', ')}` : summarize(form);
+  const summary = missing.length ? `Still needed: ${missing.join(', ')}` : summarize(form);
+  const status = failed ? "Couldn't post your game. Try again." : summary;
   const isDirty = (Object.keys(form) as (keyof GameForm)[]).some((key) => !same(form[key], start[key]));
 
-  return { form, set, errors: shown, status, isDirty, submit };
+  return { form, set, errors: shown, status, isDirty, posting, submit };
 }

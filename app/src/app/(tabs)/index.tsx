@@ -12,24 +12,24 @@ import { GameCard } from '@/features/home/game-card';
 import { HomeHeader } from '@/features/home/home-header';
 import { SearchBar } from '@/features/home/search-bar';
 import { useGames } from '@/features/home/use-games';
-import { MOCK_NOTIFICATIONS } from '@/mock/notifications';
+import { useHasUnread } from '@/features/home/use-has-unread';
 import { colors, space, typography } from '@/theme';
 
 export default function DiscoverScreen() {
   const insets = useSafeAreaInsets();
-  const { games: allGames, status, retry } = useGames();
   const [campus, setCampus] = useState<Campus>('MMC');
+  const { games: campusGames, status, retry } = useGames(campus);
+  const hasUnread = useHasUnread();
   const [filters, setFilters] = useState(EMPTY_FILTERS);
   const [filtering, setFiltering] = useState(false);
   const active = countActive(filters);
-  const campusGames = allGames.filter((game) => game.campus === campus);
   const games = applyFilters(campusGames, filters);
 
   const top = (
     <View style={styles.top}>
       <HomeHeader
         name="Panther!"
-        hasUnread={MOCK_NOTIFICATIONS.some((n) => n.unread)}
+        hasUnread={hasUnread}
         onBellPress={() => router.push('/notifications')}
       />
       <CampusToggle value={campus} onChange={setCampus} style={styles.campus} />

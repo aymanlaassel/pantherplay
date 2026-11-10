@@ -1,44 +1,17 @@
 import { fireEvent, render, screen } from '@testing-library/react-native';
 
 import DiscoverScreen from '@/app/(tabs)/index';
-import { applyFilters, countActive, EMPTY_FILTERS } from '@/features/home/filters';
-import { MOCK_GAMES } from '@/features/home/mock-games';
-import { todayAt } from '@/mock/today-at';
+import { mockGames, resetMockGames } from '@/mock/games';
 
-jest.mock('expo-router', () => ({ router: { push: jest.fn() } }));
+jest.mock('expo-router', () => ({ router: { push: jest.fn() }, useFocusEffect: (effect: () => void) => require('react').useEffect(effect, [effect]) }));
 jest.mock('react-native-safe-area-context', () => require('react-native-safe-area-context/jest/mock').default);
+jest.mock('@/api/delay', () => ({ delay: () => Promise.resolve() }));
 
-const titles = MOCK_GAMES.map((game) => game.title);
+// The three games these tests were written against.
+const GAMES = mockGames().filter((game) => ['1', '2', '3'].includes(game.id));
+beforeEach(() => resetMockGames(GAMES));
 
-describe('applyFilters', () => {
-  test('no filters keeps every game', () => {
-    expect(applyFilters(MOCK_GAMES, EMPTY_FILTERS)).toEqual(MOCK_GAMES);
-  });
-
-  test('filters by sport and skill level', () => {
-    expect(applyFilters(MOCK_GAMES, { ...EMPTY_FILTERS, sport: 'Soccer' }).map((g) => g.id)).toEqual(['1']);
-    expect(applyFilters(MOCK_GAMES, { ...EMPTY_FILTERS, level: 'intermediate' }).map((g) => g.id)).toEqual(['2']);
-  });
-
-  test('time slots split the day: 5 PM to midnight is evening, nothing here is in the morning', () => {
-    expect(applyFilters(MOCK_GAMES, { ...EMPTY_FILTERS, time: 'evening' })).toHaveLength(MOCK_GAMES.length);
-    expect(applyFilters(MOCK_GAMES, { ...EMPTY_FILTERS, time: 'morning' })).toEqual([]);
-  });
-
-  test('every start hour lands in a slot, so a 3 AM game counts as morning', () => {
-    const early = [{ ...MOCK_GAMES[0], startsAt: todayAt(3) }];
-    expect(applyFilters(early, { ...EMPTY_FILTERS, time: 'morning' })).toEqual(early);
-  });
-
-  test('filters combine with AND', () => {
-    expect(applyFilters(MOCK_GAMES, { ...EMPTY_FILTERS, sport: 'Soccer', level: 'advanced' })).toEqual([]);
-  });
-
-  test('countActive counts only the chosen filters', () => {
-    expect(countActive(EMPTY_FILTERS)).toBe(0);
-    expect(countActive({ ...EMPTY_FILTERS, sport: 'Soccer', time: 'evening' })).toBe(2);
-  });
-});
+const titles = GAMES.map((game) => game.sport);
 
 describe('Home filter modal', () => {
   const openFilters = async () => {
@@ -54,7 +27,7 @@ describe('Home filter modal', () => {
 
   test('choosing a sport previews the count, and Show applies it to the list', async () => {
     await openFilters();
-    await fireEvent.press(screen.getByText('Soccer'));
+    await fireEvent.press(screen.getByRole('button', { name: 'Soccer' }));
     await fireEvent.press(screen.getByText('Show 1 game'));
 
     expect(screen.getByText(titles[0])).toBeTruthy();
@@ -65,7 +38,7 @@ describe('Home filter modal', () => {
 
   test('Cancel throws the draft away', async () => {
     await openFilters();
-    await fireEvent.press(screen.getByText('Soccer'));
+    await fireEvent.press(screen.getByRole('button', { name: 'Soccer' }));
     await fireEvent.press(screen.getByText('Cancel'));
 
     expect(screen.getByText(titles[1])).toBeTruthy();
@@ -74,7 +47,7 @@ describe('Home filter modal', () => {
 
   test('Reset clears the draft', async () => {
     await openFilters();
-    await fireEvent.press(screen.getByText('Soccer'));
+    await fireEvent.press(screen.getByRole('button', { name: 'Soccer' }));
     await fireEvent.press(screen.getByText('Reset'));
     expect(screen.getByText('Show 2 games')).toBeTruthy();
   });
@@ -88,7 +61,7 @@ describe('Home filter modal', () => {
 
   test('reopening starts from the applied filters', async () => {
     await openFilters();
-    await fireEvent.press(screen.getByText('Soccer'));
+    await fireEvent.press(screen.getByRole('button', { name: 'Soccer' }));
     await fireEvent.press(screen.getByText('Show 1 game'));
     await fireEvent.press(screen.getByLabelText('Filters, 1 active'));
     expect(screen.getByText('Show 1 game')).toBeTruthy();

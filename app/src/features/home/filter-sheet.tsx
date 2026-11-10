@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import type { Game } from '@/api/types';
 import { SKILL_LEVEL_LABEL, type SkillLevel } from '@/components/badge-level';
 import { ButtonFilled } from '@/components/button-filled';
 import { ButtonOutline } from '@/components/button-outline';
@@ -10,11 +11,10 @@ import { colors, radius, space, typography } from '@/theme';
 
 import { FilterSection } from './filter-section';
 import { applyFilters, EMPTY_FILTERS, TIME_SLOTS, type Filters } from './filters';
-import type { HomeGame } from './mock-games';
 
 type FilterSheetProps = {
   filters: Filters;
-  games: HomeGame[];
+  games: Game[];
   onApply: (filters: Filters) => void;
   onClose: () => void;
 };

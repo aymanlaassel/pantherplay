@@ -1,17 +1,16 @@
 import { StyleSheet, Text, View } from 'react-native';
 
+import type { Game } from '@/api/types';
 import { InitialsAvatar } from '@/components/initials-avatar';
+import { initials } from '@/lib/initials';
 import { colors, space, typography } from '@/theme';
 
-import type { GameDetail } from './mock-games';
-
-export function HostRow({ host }: Pick<GameDetail, 'host'>) {
+export function HostRow({ host }: Pick<Game, 'host'>) {
   return (
     <View style={styles.row}>
-      <InitialsAvatar initials={host.initials} size={48} />
+      <InitialsAvatar initials={initials(host.fullName)} imageUrl={host.avatarUrl} size={48} />
       <View style={styles.text}>
-        <Text style={styles.name}>{`Hosted by ${host.name}`}</Text>
-        <Text style={styles.note}>{host.note}</Text>
+        <Text style={styles.name}>{`Hosted by ${host.fullName}`}</Text>
       </View>
     </View>
   );
@@ -19,7 +18,6 @@ export function HostRow({ host }: Pick<GameDetail, 'host'>) {
 
 const styles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', gap: space[12] },
-  text: { gap: space[4] },
-  name: { ...typography['Body/Strong'], color: colors.text.primary },
-  note: { ...typography.Caption, color: colors.text.muted },
+  text: { flex: 1, gap: space[4] },
+  name: { ...typography['Body/Strong'], color: colors.text.primary, flexShrink: 1 },
 });
