@@ -2,24 +2,23 @@ import { useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import type { Game } from '@/api/types';
 import { SKILL_LEVEL_LABEL, type SkillLevel } from '@/components/badge-level';
 import { ButtonFilled } from '@/components/button-filled';
 import { ButtonOutline } from '@/components/button-outline';
-import { SPORTS } from '@/features/create-game/options';
+import { SPORTS } from '@/api/sports';
 import { colors, radius, space, typography } from '@/theme';
 
 import { FilterSection } from './filter-section';
 import { applyFilters, EMPTY_FILTERS, TIME_SLOTS, type Filters } from './filters';
-import type { HomeGame } from './mock-games';
 
 type FilterSheetProps = {
   filters: Filters;
-  games: HomeGame[];
+  games: Game[];
   onApply: (filters: Filters) => void;
   onClose: () => void;
 };
 
-const toOptions = (values: string[]) => values.map((value) => ({ value, label: value }));
 const LEVELS = (Object.keys(SKILL_LEVEL_LABEL) as SkillLevel[]).map((value) => ({
   value,
   label: SKILL_LEVEL_LABEL[value],
@@ -41,7 +40,7 @@ export function FilterSheet({ filters, games, onApply, onClose }: FilterSheetPro
         </Pressable>
       </View>
       <ScrollView contentContainerStyle={styles.sections}>
-        <FilterSection title="Sport" options={toOptions(SPORTS)} value={draft.sport} onChange={(v) => set('sport', v)} />
+        <FilterSection title="Sport" options={SPORTS.map(({ code, name }) => ({ value: code, label: name }))} value={draft.sport} onChange={(v) => set('sport', v)} />
         <FilterSection title="Time" options={TIME_SLOTS} value={draft.time} onChange={(v) => set('time', v)} />
         <FilterSection title="Skill level" options={LEVELS} value={draft.level} onChange={(v) => set('level', v)} />
       </ScrollView>

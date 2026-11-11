@@ -11,6 +11,8 @@ import { WhenFields } from '@/features/create-game/when-fields';
 import { summarize } from '@/features/create-game/summarize';
 import { validateGame, type GameForm } from '@/features/create-game/validate';
 import CreateGameScreen from '@/app/game/create';
+import * as locationsApi from '@/api/locations';
+import { FIELD } from '@/mock/locations';
 
 jest.mock('@react-native-community/datetimepicker', () => ({
   __esModule: true,
@@ -18,18 +20,17 @@ jest.mock('@react-native-community/datetimepicker', () => ({
   DateTimePickerAndroid: { open: jest.fn() },
 }));
 
+jest.mock('@/api/delay', () => ({ delay: () => Promise.resolve() }));
 jest.mock('expo-router', () => ({ router: { back: jest.fn(), replace: jest.fn(), canGoBack: jest.fn(() => true) } }));
 jest.mock('react-native-safe-area-context', () => require('react-native-safe-area-context/jest/mock').default);
 
 const now = new Date('2030-01-01T12:00:00');
 const valid: GameForm = {
-  sport: 'Soccer',
-  otherSport: '',
+  sport: 'soccer',
   startsAt: new Date('2030-01-01T13:00:00'),
   durationMinutes: 60,
-  customMinutes: '',
   campus: 'MMC',
-  location: 'Panther Field',
+  location: FIELD,
   players: 4,
   skill: 'Beginner',
   notes: '',
@@ -44,21 +45,29 @@ test('sport is required', () => {
 });
 
 test('location is required', () => {
-  expect(validateGame({ ...valid, location: '  ' }, now).location).toBeTruthy();
+  expect(validateGame({ ...valid, location: null }, now).location).toBeTruthy();
 });
 
-test('"Other" sport needs a name', () => {
-  expect(validateGame({ ...valid, sport: 'Other' }, now).otherSport).toBeTruthy();
-  expect(validateGame({ ...valid, sport: 'Other', otherSport: 'Cricket' }, now).otherSport).toBeUndefined();
+test('duration offers only the lengths the database allows, with no custom minutes', async () => {
+  await render(<CreateGameScreen />);
+  for (const label of ['1 hr', '1.5 hr', '2 hr']) expect(screen.getByText(label)).toBeTruthy();
+  expect(screen.queryByText('Other')).toBeNull();
+  expect(screen.queryByLabelText('Minutes')).toBeNull();
 });
 
-test.each([['', false], ['14', false], ['15', true], ['480', true], ['481', false]])(
-  'custom duration "%s" valid: %s',
-  (customMinutes, ok) => {
-    const errors = validateGame({ ...valid, durationMinutes: null, customMinutes }, now);
-    expect(errors.duration === undefined).toBe(ok);
-  },
-);
+test('location is picked from the campus spots, and switching campus clears it', async () => {
+  await render(<CreateGameScreen />);
+  await fireEvent.press(await screen.findByText('Panther Field'));
+  expect(screen.getByRole('button', { name: 'Panther Field' }).props.accessibilityState.selected).toBe(true);
+  expect(screen.queryByText('BBC Recreation Field')).toBeNull();
+
+  await fireEvent.press(screen.getByText('BBC'));
+  expect(await screen.findByText('BBC Recreation Field')).toBeTruthy();
+  expect(screen.queryByText('Panther Field')).toBeNull();
+  await fireEvent.press(screen.getByText('MMC'));
+  await screen.findByText('Panther Field');
+  expect(screen.getByRole('button', { name: 'Panther Field' }).props.accessibilityState.selected).toBe(false);
+});
 
 test('start time cannot be in the past', () => {
   expect(validateGame({ ...valid, startsAt: new Date('2030-01-01T11:00:00') }, now).startsAt).toBeTruthy();
@@ -101,12 +110,20 @@ test('Post game reveals the sport error until a sport is picked', async () => {
   expect(screen.queryByText('Pick a sport')).toBeNull();
 });
 
-test('picking Other shows the sport name and minutes inputs', async () => {
+test('if the places fail to load, the form says so instead of crashing', async () => {
+  const spy = jest.spyOn(locationsApi, 'getLocations').mockRejectedValueOnce(new Error('offline'));
   await render(<CreateGameScreen />);
-  await fireEvent.press(screen.getAllByText('Other')[0]);
-  expect(screen.getByLabelText('Which sport?')).toBeTruthy();
-  await fireEvent.press(screen.getAllByText('Other')[1]);
-  expect(screen.getByLabelText('Minutes')).toBeTruthy();
+  expect(await screen.findByText("Couldn't load places. Switch campus to try again.")).toBeTruthy();
+  spy.mockRestore();
+});
+
+test('sport offers exactly the sports table, with no Other chip for now', async () => {
+  await render(<CreateGameScreen />);
+  for (const name of ['Basketball', 'Soccer', 'Volleyball', 'Tennis', 'Pickleball', 'Flag Football']) {
+    expect(screen.getByText(name)).toBeTruthy();
+  }
+  expect(screen.queryByText('Other')).toBeNull();
+  expect(screen.queryByLabelText('Which sport?')).toBeNull();
 });
 
 test('the screen shows the notes limit message', async () => {
@@ -150,14 +167,14 @@ test('summary joins sport, time, place and players', () => {
   expect(text).toContain(' - Panther Field - 1 player');
 });
 
-test('summary uses the typed name for Other', () => {
-  expect(summarize({ ...valid, sport: 'Other', otherSport: ' Cricket ' })).toMatch(/^Cricket - /);
+test('summary shows the sport name, not its code', () => {
+  expect(summarize({ ...valid, sport: 'flag_football' })).toMatch(/^Flag Football - /);
 });
 
 test('footer shows the summary once the form is valid', async () => {
   await render(<CreateGameScreen />);
   await fireEvent.press(screen.getByText('Soccer'));
-  await fireEvent.changeText(screen.getByLabelText('Location'), 'Panther Field');
+  await fireEvent.press(await screen.findByText('Panther Field'));
   expect(screen.getByText(/^Soccer - .* - Panther Field - 2 players$/)).toBeTruthy();
 });
 

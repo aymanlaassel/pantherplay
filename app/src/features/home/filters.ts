@@ -1,11 +1,10 @@
+import type { Game, SportCode } from '@/api/types';
 import type { SkillLevel } from '@/components/badge-level';
-
-import type { HomeGame } from './mock-games';
 
 export type TimeSlot = 'morning' | 'afternoon' | 'evening';
 
 export type Filters = {
-  sport: string | null;
+  sport: SportCode | null;
   time: TimeSlot | null;
   level: SkillLevel | null;
 };
@@ -24,11 +23,11 @@ function inSlot(hour: number, slot: TimeSlot): boolean {
   return hour >= from && hour < to;
 }
 
-export function applyFilters(games: HomeGame[], filters: Filters): HomeGame[] {
+export function applyFilters(games: Game[], filters: Filters): Game[] {
   return games.filter(
     (game) =>
-      (!filters.sport || game.sport === filters.sport) &&
-      (!filters.level || game.level === filters.level) &&
+      (!filters.sport || game.sport.code === filters.sport) &&
+      (!filters.level || game.skillLevel === filters.level) &&
       (!filters.time || inSlot(new Date(game.startsAt).getHours(), filters.time)),
   );
 }

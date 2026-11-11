@@ -1,20 +1,17 @@
 import { StyleSheet, Text, View } from 'react-native';
 
+import type { Duration } from '@/api/types';
 import { Chip } from '@/components/chip';
-import { Field } from '@/components/field';
 import { colors, space, typography } from '@/theme';
 
-import { DURATIONS, OTHER } from './options';
+import { DURATIONS } from './options';
 
 type DurationPickerProps = {
-  minutes: number | null;
-  customMinutes: string;
-  onMinutes: (minutes: number | null) => void;
-  onCustomMinutes: (text: string) => void;
-  error?: string;
+  minutes: Duration;
+  onMinutes: (minutes: Duration) => void;
 };
 
-export function DurationPicker({ minutes, customMinutes, onMinutes, onCustomMinutes, error }: DurationPickerProps) {
+export function DurationPicker({ minutes, onMinutes }: DurationPickerProps) {
   return (
     <View style={styles.group}>
       <Text style={styles.label}>Duration</Text>
@@ -27,18 +24,7 @@ export function DurationPicker({ minutes, customMinutes, onMinutes, onCustomMinu
             onPress={() => onMinutes(option.minutes)}
           />
         ))}
-        <Chip label={OTHER} selected={minutes === null} onPress={() => onMinutes(null)} />
       </View>
-      {minutes === null ? (
-        <Field
-          label="Minutes"
-          value={customMinutes}
-          onChangeText={(text) => onCustomMinutes(text.replace(/\D/g, ''))}
-          keyboardType="number-pad"
-          maxLength={3}
-          error={error}
-        />
-      ) : null}
     </View>
   );
 }

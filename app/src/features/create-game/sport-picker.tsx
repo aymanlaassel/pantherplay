@@ -1,33 +1,27 @@
 import { StyleSheet, Text, View } from 'react-native';
 
+import { SPORTS } from '@/api/sports';
+import type { SportCode } from '@/api/types';
 import { Chip } from '@/components/chip';
-import { Field } from '@/components/field';
 import { colors, space, typography } from '@/theme';
 
-import { OTHER, SPORTS } from './options';
-
 type SportPickerProps = {
-  sport: string | null;
-  otherSport: string;
-  onSport: (sport: string) => void;
-  onOtherSport: (text: string) => void;
+  sport: SportCode | null;
+  onSport: (sport: SportCode) => void;
   error?: string;
-  otherError?: string;
 };
 
-export function SportPicker({ sport, otherSport, onSport, onOtherSport, error, otherError }: SportPickerProps) {
+// No "Other" chip until the team decides on custom sports: the database only takes these codes.
+export function SportPicker({ sport, onSport, error }: SportPickerProps) {
   return (
     <View style={styles.group}>
       <Text style={styles.label}>Sport *</Text>
       <View style={styles.chips}>
-        {[...SPORTS, OTHER].map((name) => (
-          <Chip key={name} label={name} selected={sport === name} onPress={() => onSport(name)} />
+        {SPORTS.map(({ code, name }) => (
+          <Chip key={code} label={name} selected={sport === code} onPress={() => onSport(code)} />
         ))}
       </View>
       {error ? <Text style={styles.error}>{error}</Text> : null}
-      {sport === OTHER ? (
-        <Field label="Which sport?" value={otherSport} onChangeText={onOtherSport} maxLength={30} error={otherError} />
-      ) : null}
     </View>
   );
 }

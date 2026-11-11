@@ -11,13 +11,13 @@ import { useGameForm } from '@/features/create-game/use-game-form';
 import { colors, space, typography } from '@/theme';
 
 export default function CreateGameScreen() {
-  const { form, set, errors, status, isDirty, submit } = useGameForm();
+  const { form, set, errors, status, isDirty, posting, submit } = useGameForm();
   const insets = useSafeAreaInsets();
   const scroll = useRef<ScrollViewInstance>(null);
 
   // Every error-prone field that starts empty is in the top section, so jump there.
-  const post = () => {
-    if (!submit()) scroll.current?.scrollTo({ y: 0, animated: true });
+  const post = async () => {
+    if ((await submit()) === 'invalid') scroll.current?.scrollTo({ y: 0, animated: true });
   };
 
   // A page opened directly (web refresh) has no screen behind it, so fall back to home.
@@ -43,7 +43,7 @@ export default function CreateGameScreen() {
         <Text accessibilityLiveRegion="polite" style={styles.status}>
           {status}
         </Text>
-        <ButtonFilled label="Post game" onPress={post} />
+        <ButtonFilled label="Post game" onPress={post} disabled={posting} />
       </View>
     </KeyboardAvoidingView>
   );

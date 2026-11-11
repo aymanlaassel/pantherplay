@@ -1,19 +1,18 @@
 // Figma: Detail rows (104:268). When, where and level plus price, each with an icon.
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
+import type { Game } from '@/api/types';
 import { SKILL_LEVEL_LABEL } from '@/components/badge-level';
 import { Icon, type IconName } from '@/components/icon';
-import { formatTimeRange } from '@/lib/format-time';
+import { endsAt, formatTimeRange } from '@/lib/format-time';
 import { colors, space, typography } from '@/theme';
 
-import type { GameDetail } from './mock-games';
-
-export function DetailRows({ game }: { game: GameDetail }) {
+export function DetailRows({ game }: { game: Game }) {
   return (
     <View style={styles.rows}>
-      <Row icon="calendar" text={`Today, ${formatTimeRange(game.startsAt, game.endsAt)}`} />
-      <Row icon="pin" text={game.place} chevron />
-      <Row icon="level" text={`${SKILL_LEVEL_LABEL[game.level]} - ${game.price}`} />
+      <Row icon="calendar" text={`Today, ${formatTimeRange(game.startsAt, endsAt(game.startsAt, game.durationMinutes))}`} />
+      <Row icon="pin" text={`${game.location.name} - ${game.location.campus}`} chevron />
+      <Row icon="level" text={`${SKILL_LEVEL_LABEL[game.skillLevel]} - Free`} />
     </View>
   );
 }

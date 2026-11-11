@@ -1,37 +1,36 @@
-// Loads Home's games and tracks whether they're loading, ready or failed.
-import { useEffect, useState } from 'react';
+// Loads a campus's games and tracks whether they're loading, ready or failed.
+// Loads again each time the tab regains focus, so a game posted elsewhere shows up.
+import { useFocusEffect } from 'expo-router';
+import { useCallback, useState } from 'react';
 
-import { listMockGames, type HomeGame } from './mock-games';
+import { getGames } from '@/api/games';
+import type { Game } from '@/api/types';
+import type { Campus } from '@/components/campus-toggle';
 
-type Status = 'loading' | 'ready' | 'error';
+type Result = { key: string; games: Game[] | null };
 
-export function useGames() {
-  const [games, setGames] = useState<HomeGame[]>([]);
-  const [status, setStatus] = useState<Status>('loading');
+export function useGames(campus: Campus) {
   const [attempt, setAttempt] = useState(0);
+  const [result, setResult] = useState<Result>({ key: '', games: null });
+  const key = `${campus}:${attempt}`;
 
-  useEffect(() => {
-    // Ignore the answer if the screen closed or a retry started while it was on its way.
-    let current = true;
-    listMockGames().then(
-      (loaded) => {
-        if (!current) return;
-        setGames(loaded);
-        setStatus('ready');
-      },
-      () => {
-        if (current) setStatus('error');
-      },
-    );
-    return () => {
-      current = false;
-    };
-  }, [attempt]);
+  useFocusEffect(
+    useCallback(() => {
+      // Ignore the answer if the campus changed or a retry started while it was on its way.
+      let current = true;
+      getGames(campus).then(
+        (games) => current && setResult({ key, games }),
+        () => current && setResult({ key, games: null }),
+      );
+      return () => {
+        current = false;
+      };
+    }, [campus, key]),
+  );
 
-  const retry = () => {
-    setStatus('loading');
-    setAttempt((n) => n + 1);
-  };
+  const loaded = result.key === key;
+  const status = !loaded ? 'loading' : result.games ? 'ready' : 'error';
+  const games = loaded && result.games ? result.games : [];
 
-  return { games, status, retry };
+  return { games, status, retry: () => setAttempt((n) => n + 1) };
 }
