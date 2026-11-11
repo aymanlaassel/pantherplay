@@ -1,12 +1,12 @@
 create type public.campus as enum ('MMC', 'BBC');
 create type public.skill_level as enum ('beginner', 'intermediate', 'advanced');
 create type public.game_status as enum('open', 'confirmed', 'full', 'cancelled', 'completed');
-create type public.player_status as enum ('joined', 'waitlisted');
+create type public.player_status as enum ('joined', 'waitlisted', 'left');
 
 
 create table public.profiles(
 id uuid primary key references auth.users (id) on delete cascade,
-    display_name text,
+    display_name text not null,
     avatar_url text,
     campus public.campus,
     onboarding_completed_at timestamptz

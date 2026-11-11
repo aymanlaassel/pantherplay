@@ -255,7 +255,7 @@ erDiagram
 
   PROFILES {
     uuid id PK "same as the signed-in user id"
-    text full_name
+    text display_name "required"
     text avatar_url
     campus home_campus "MMC or BBC"
     timestamptz onboarding_completed_at
@@ -276,7 +276,7 @@ erDiagram
   GAME_PLAYERS {
     uuid game_id PK "with user_id, stops double-joining"
     uuid user_id PK
-    player_status status "joined, waitlisted, left, no_show"
+    player_status status "joined, waitlisted, left"
     timestamptz joined_at
   }
   LOCATIONS {
@@ -329,7 +329,7 @@ erDiagram
 |---|---|
 | **PROFILES** | One row per student: name, photo, home campus. Its `id` is the same as their sign-in id, which links the login to the profile. |
 | **GAMES** | One row per posted game: who hosts, sport, place, start time, length, player limits and status. |
-| **GAME_PLAYERS** | Who is in which game: one row per person per game, with their status (joined, waitlisted, left, no-show). Counting the `joined` rows gives the spots filled. |
+| **GAME_PLAYERS** | Who is in which game: one row per person per game, with their status (joined, waitlisted, left). Counting the `joined` rows gives the spots filled. |
 | **LOCATIONS** | The fixed list of campus spots (Panther Field, Rec Center…), their photos and their coordinates. Games pick one instead of typing an address; the Map tab uses the coordinates to drop a pin per game (see [ADR 0004](./adr/0004-map-tab.md)). |
 | **SPORTS** | The list of sports the app offers. |
 | **PROFILE_SPORTS** | Which sports each student plays and at what level, from onboarding. Used to set Discover's defaults. |
