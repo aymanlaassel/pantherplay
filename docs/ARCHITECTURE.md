@@ -467,9 +467,6 @@ flowchart TB
     F1["Home / Discover / Feed"]
     F2["Design system + Figma library"]
   end
-  subgraph Josue["Josue"]
-    J1["Home / Discover / Feed"]
-  end
   subgraph Ayman["Ayman — co-lead"]
     A1["Map"]
   end
