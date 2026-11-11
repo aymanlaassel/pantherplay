@@ -17,6 +17,7 @@ function withCounts(record: GameRecord): Game {
   return {
     ...record,
     spotsFilled: record.players.filter((p) => p.status === 'joined').length,
+    hostGamesCount: mockGames().filter((g) => g.host.id === record.host.id && g.status !== 'cancelled').length,
     myStatus: mine === 'joined' || mine === 'waitlisted' ? mine : null,
   };
 }

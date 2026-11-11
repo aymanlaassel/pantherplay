@@ -6,7 +6,7 @@ import { todayAt } from '@/mock/today-at';
 // The three games the filters were written against, with spots counted.
 const LISTED: Game[] = mockGames()
   .filter((game) => ['1', '2', '3'].includes(game.id))
-  .map((game) => ({ ...game, spotsFilled: game.players.length, myStatus: null }));
+  .map((game) => ({ ...game, spotsFilled: game.players.length, myStatus: null, hostGamesCount: 1 }));
 
 describe('applyFilters', () => {
   test('no filters keeps every game', () => {

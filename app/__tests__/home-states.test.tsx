@@ -11,7 +11,7 @@ jest.mock('@/api/games', () => ({ ...jest.requireActual('@/api/games'), getGames
 
 const GAMES: Game[] = mockGames()
   .slice(0, 3)
-  .map((game) => ({ ...game, spotsFilled: game.players.length, myStatus: null }));
+  .map((game) => ({ ...game, spotsFilled: game.players.length, myStatus: null, hostGamesCount: 1 }));
 
 const load = jest.mocked(getGames);
 

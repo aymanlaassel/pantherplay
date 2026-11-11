@@ -44,7 +44,7 @@ export default function GameDetailScreen() {
           <Text style={styles.title}>{game.sport.name}</Text>
           {state === 'open' ? null : <BadgeStatus status={state} />}
         </View>
-        <HostRow host={game.host} />
+        <HostRow host={game.host} hostGamesCount={game.hostGamesCount} />
         <View style={styles.divider} />
         <DetailRows game={game} />
         <View style={styles.divider} />

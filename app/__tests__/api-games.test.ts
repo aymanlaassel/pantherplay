@@ -1,6 +1,6 @@
 import { createGame, getGame, getGames, joinGame, leaveGame } from '@/api/games';
 import { getLocations } from '@/api/locations';
-import { resetMockGames } from '@/mock/games';
+import { mockGames, resetMockGames } from '@/mock/games';
 
 jest.mock('@/api/delay', () => ({ delay: () => Promise.resolve() }));
 
@@ -120,5 +120,26 @@ describe('getLocations', () => {
   test('lists only the spots on the asked campus', async () => {
     expect((await getLocations('BBC')).map((l) => l.id)).toEqual(['loc-bbc']);
     expect((await getLocations('MMC')).every((l) => l.campus === 'MMC')).toBe(true);
+  });
+});
+
+describe('hostGamesCount', () => {
+  test("counts the host's games but not cancelled ones, and grows when they post", async () => {
+    const all = mockGames();
+    const alex = all[0].host.id;
+    const notCancelled = all.filter((g) => g.host.id === alex && g.status !== 'cancelled').length;
+    expect(all.some((g) => g.host.id === alex && g.status === 'cancelled')).toBe(true); // so the exclusion is really tested
+    expect((await getGame('1'))?.hostGamesCount).toBe(notCancelled);
+
+    const first = await createGame({
+      sport: 'tennis',
+      locationId: 'loc-bbc',
+      startsAt: new Date(Date.now() + 3_600_000).toISOString(),
+      durationMinutes: 60,
+      maxPlayers: 4,
+      skillLevel: 'beginner',
+      notes: '',
+    });
+    expect(first.hostGamesCount).toBe(1);
   });
 });

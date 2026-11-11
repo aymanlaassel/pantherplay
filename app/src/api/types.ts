@@ -48,9 +48,10 @@ export type GameRecord = {
   players: Player[];
 };
 
-// What screens get: the record plus two values counted from its players, never stored.
+// What screens get: the record plus values counted from the data, never stored.
 export type Game = GameRecord & {
   spotsFilled: number; // players with status joined
+  hostGamesCount: number; // games the host has posted, not counting cancelled ones
   myStatus: 'joined' | 'waitlisted' | null; // the signed-in user's place in this game
 };
 

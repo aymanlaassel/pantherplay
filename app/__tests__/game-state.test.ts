@@ -4,7 +4,7 @@ import { initials } from '@/lib/initials';
 import { mockGames } from '@/mock/games';
 
 const now = new Date('2030-01-01T12:00:00Z');
-const base: Game = { ...mockGames()[0], startsAt: '2030-01-01T19:00:00Z', status: 'open', spotsFilled: 4, myStatus: null };
+const base: Game = { ...mockGames()[0], startsAt: '2030-01-01T19:00:00Z', status: 'open', spotsFilled: 4, myStatus: null, hostGamesCount: 1 };
 
 test('a cancelled game is cancelled, even if you were in it', () => {
   expect(gameState({ ...base, status: 'cancelled', myStatus: 'joined' }, now)).toBe('cancelled');

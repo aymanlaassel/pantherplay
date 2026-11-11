@@ -31,6 +31,8 @@ test('shows the game from the Figma frame', async () => {
   await open('1');
   expect(screen.getByText('Soccer')).toBeTruthy();
   expect(screen.getByText('Hosted by Alex R.')).toBeTruthy();
+  const hosted = mockGames().filter((g) => g.host.id === mockGames()[0].host.id && g.status !== 'cancelled').length;
+  expect(screen.getByText(`Hosted ${hosted} games`)).toBeTruthy();
   expect(screen.getByText(/^Today, 7:00\sPM - 8:00\sPM$/)).toBeTruthy();
   expect(screen.getByText('7 of 10 spots filled')).toBeTruthy();
   expect(screen.getByText('+2 more')).toBeTruthy();
@@ -86,4 +88,10 @@ describe('spots bar', () => {
     expect(screen.getByText(`12 of ${MAX_SEGMENTS + 20} spots filled`)).toBeTruthy();
     expect(screen.getByRole('progressbar').props.children).toHaveLength(2);
   });
+});
+
+test('a host with one game reads "Hosted 1 game"', async () => {
+  await open('2');
+  expect(screen.getByText('Hosted by Maya T.')).toBeTruthy();
+  expect(screen.getByText('Hosted 1 game')).toBeTruthy();
 });
