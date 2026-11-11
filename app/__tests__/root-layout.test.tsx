@@ -90,7 +90,9 @@ describe('auth gate', () => {
     await render(<RootLayout />);
     expect(screen.getByText('screen:(auth)')).toBeTruthy();
     expect(screen.queryByText('screen:(tabs)')).toBeNull();
-    expect(screen.queryByText('screen:game/[id]')).toBeNull();
+    for (const route of ['game/[id]', 'game/create', 'notifications', 'settings/index', 'settings/delete-account']) {
+      expect(screen.queryByText(`screen:${route}`)).toBeNull();
+    }
   });
 
   test('signed in: the tabs can be reached and Welcome cannot', async () => {
