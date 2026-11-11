@@ -4,10 +4,12 @@ import { fireEvent, render, screen } from '@testing-library/react-native';
 import ProfileScreen from '@/app/(tabs)/profile';
 import { BADGE_STATUS_LABEL } from '@/components/badge-status';
 import { ProfileContent, profileInitials } from '@/features/profile/profile-content';
+import { signOut } from '@/lib/auth';
 import { formatTimeRange } from '@/lib/format-time';
 import { MOCK_USER, MOCK_USER_LONG_NAME, MOCK_USER_NULL_AVATAR } from '@/mock/profile';
 
 jest.mock('expo-router', () => ({ router: { push: jest.fn(), back: jest.fn() } }));
+jest.mock('@/lib/auth', () => ({ signOut: jest.fn() }));
 jest.mock('react-native-safe-area-context', () => require('react-native-safe-area-context/jest/mock').default);
 
 beforeEach(() => {
@@ -102,4 +104,10 @@ test('the Joined badge shows only when the user joined', async () => {
 test('there is no dark-mode button', async () => {
   await render(<ProfileScreen />);
   expect(screen.queryByLabelText(/dark mode/i)).toBeNull();
+});
+
+test('the temporary Sign out button signs out (the auth gate then shows Welcome)', async () => {
+  await render(<ProfileScreen />);
+  fireEvent.press(screen.getByRole('button', { name: 'Sign out' }));
+  expect(signOut).toHaveBeenCalledTimes(1);
 });
