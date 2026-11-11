@@ -64,12 +64,12 @@ export const MOCK_NOTIFICATIONS: AppNotification[] = [
   {
     id: 'friend',
     type: 'friend-playing',
-    title: 'Josue is playing Thursday',
+    title: 'Daniela is playing Thursday',
     body: '3v3 Basketball at the Rec Center, 2 spots left.',
     time: '1d',
     unread: false,
     // No photo on file: the avatar falls back to initials.
-    person: 'Josue',
+    person: 'Daniela',
   },
   {
     id: 'rate',
