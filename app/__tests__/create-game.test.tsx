@@ -26,8 +26,7 @@ jest.mock('react-native-safe-area-context', () => require('react-native-safe-are
 
 const now = new Date('2030-01-01T12:00:00');
 const valid: GameForm = {
-  sport: 'Soccer',
-  otherSport: '',
+  sport: 'soccer',
   startsAt: new Date('2030-01-01T13:00:00'),
   durationMinutes: 60,
   campus: 'MMC',
@@ -49,15 +48,10 @@ test('location is required', () => {
   expect(validateGame({ ...valid, location: null }, now).location).toBeTruthy();
 });
 
-test('"Other" sport needs a name', () => {
-  expect(validateGame({ ...valid, sport: 'Other' }, now).otherSport).toBeTruthy();
-  expect(validateGame({ ...valid, sport: 'Other', otherSport: 'Cricket' }, now).otherSport).toBeUndefined();
-});
-
 test('duration offers only the lengths the database allows, with no custom minutes', async () => {
   await render(<CreateGameScreen />);
   for (const label of ['1 hr', '1.5 hr', '2 hr']) expect(screen.getByText(label)).toBeTruthy();
-  expect(screen.getAllByText('Other')).toHaveLength(1); // the sport one only
+  expect(screen.queryByText('Other')).toBeNull();
   expect(screen.queryByLabelText('Minutes')).toBeNull();
 });
 
@@ -123,10 +117,13 @@ test('if the places fail to load, the form says so instead of crashing', async (
   spy.mockRestore();
 });
 
-test('picking Other shows the sport name input', async () => {
+test('sport offers exactly the sports table, with no Other chip for now', async () => {
   await render(<CreateGameScreen />);
-  await fireEvent.press(screen.getByText('Other'));
-  expect(screen.getByLabelText('Which sport?')).toBeTruthy();
+  for (const name of ['Basketball', 'Soccer', 'Volleyball', 'Tennis', 'Pickleball', 'Flag Football']) {
+    expect(screen.getByText(name)).toBeTruthy();
+  }
+  expect(screen.queryByText('Other')).toBeNull();
+  expect(screen.queryByLabelText('Which sport?')).toBeNull();
 });
 
 test('the screen shows the notes limit message', async () => {
@@ -170,8 +167,8 @@ test('summary joins sport, time, place and players', () => {
   expect(text).toContain(' - Panther Field - 1 player');
 });
 
-test('summary uses the typed name for Other', () => {
-  expect(summarize({ ...valid, sport: 'Other', otherSport: ' Cricket ' })).toMatch(/^Cricket - /);
+test('summary shows the sport name, not its code', () => {
+  expect(summarize({ ...valid, sport: 'flag_football' })).toMatch(/^Flag Football - /);
 });
 
 test('footer shows the summary once the form is valid', async () => {

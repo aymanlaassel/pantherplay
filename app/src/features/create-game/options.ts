@@ -2,9 +2,6 @@ import type { Duration } from '@/api/types';
 import { SKILL_LEVEL_LABEL } from '@/components/badge-level';
 import type { Campus } from '@/components/campus-toggle';
 
-// Placeholder choices until the sports seed and Figma limits are decided.
-export const SPORTS = ['Basketball', 'Soccer', 'Volleyball', 'Tennis', 'Pickleball', 'Flag football'];
-export const OTHER = 'Other';
 // The database only allows these three lengths.
 export const DURATIONS: { label: string; minutes: Duration }[] = [
   { label: '1 hr', minutes: 60 },

@@ -11,7 +11,7 @@ jest.mock('@/api/delay', () => ({ delay: () => Promise.resolve() }));
 const GAMES = mockGames().filter((game) => ['1', '2', '3'].includes(game.id));
 beforeEach(() => resetMockGames(GAMES));
 
-const titles = GAMES.map((game) => game.sport);
+const titles = GAMES.map((game) => game.sport.name);
 
 describe('Home filter modal', () => {
   const openFilters = async () => {

@@ -27,7 +27,7 @@ describe('posting', () => {
     await fill();
     await fireEvent.press(screen.getByText('Post game'));
     expect(createGame).toHaveBeenCalledWith({
-      sport: 'Soccer',
+      sport: 'soccer',
       locationId: 'loc-field',
       startsAt: expect.any(String),
       durationMinutes: 60,

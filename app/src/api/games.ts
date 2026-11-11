@@ -2,6 +2,8 @@
 import type { Campus } from '@/components/campus-toggle';
 import { mockGames } from '@/mock/games';
 import { LOCATIONS } from '@/mock/locations';
+
+import { SPORTS } from './sports';
 import { ME } from '@/mock/people';
 
 import { delay } from './delay';
@@ -66,12 +68,15 @@ export async function createGame(input: NewGame): Promise<Game> {
   // Like the location_id foreign key: only a spot from the fixed list is accepted.
   const location = LOCATIONS.find((l) => l.id === input.locationId);
   if (!location) throw new Error('Unknown location');
+  const sport = SPORTS.find((s) => s.code === input.sport);
+  if (!sport) throw new Error('Unknown sport');
   created += 1;
   const { locationId, ...rest } = input;
   const record: GameRecord = {
     ...rest,
     id: `new-${created}`,
     host: ME,
+    sport,
     location,
     notes: rest.notes || null,
     status: 'open',

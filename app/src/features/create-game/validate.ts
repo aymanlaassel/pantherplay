@@ -1,11 +1,10 @@
-import type { Duration, Location } from '@/api/types';
+import type { Duration, Location, SportCode } from '@/api/types';
 import type { Campus } from '@/components/campus-toggle';
 
-import { MAX_PLAYERS, MIN_PLAYERS, NOTES_MAX, OTHER } from './options';
+import { MAX_PLAYERS, MIN_PLAYERS, NOTES_MAX } from './options';
 
 export type GameForm = {
-  sport: string | null;
-  otherSport: string;
+  sport: SportCode | null;
   startsAt: Date;
   durationMinutes: Duration;
   campus: Campus;
@@ -16,13 +15,12 @@ export type GameForm = {
 };
 
 export type GameErrors = Partial<
-  Record<'sport' | 'otherSport' | 'startsAt' | 'location' | 'players' | 'notes', string>
+  Record<'sport' | 'startsAt' | 'location' | 'players' | 'notes', string>
 >;
 
 export function validateGame(form: GameForm, now: Date = new Date()): GameErrors {
   const errors: GameErrors = {};
   if (!form.sport) errors.sport = 'Pick a sport';
-  else if (form.sport === OTHER && !form.otherSport.trim()) errors.otherSport = 'Name the sport';
   if (form.startsAt.getTime() <= now.getTime()) errors.startsAt = 'Pick a time in the future';
   if (!form.location) errors.location = "Pick where you're playing";
   if (form.players < MIN_PLAYERS || form.players > MAX_PLAYERS) {

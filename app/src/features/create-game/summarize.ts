@@ -1,8 +1,9 @@
-import { OTHER } from './options';
+import { SPORTS } from '@/api/sports';
+
 import type { GameForm } from './validate';
 
 export function summarize(form: GameForm): string {
-  const sport = form.sport === OTHER ? form.otherSport.trim() : form.sport;
+  const sport = SPORTS.find((s) => s.code === form.sport)?.name;
   const when = form.startsAt.toLocaleString(undefined, {
     weekday: 'short',
     hour: 'numeric',

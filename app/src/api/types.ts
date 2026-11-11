@@ -5,6 +5,10 @@ import type { Campus } from '@/components/campus-toggle';
 export type GameStatus = 'open' | 'confirmed' | 'full' | 'cancelled' | 'completed';
 export type PlayerStatus = 'joined' | 'waitlisted' | 'left';
 export type Duration = 60 | 90 | 120;
+export type SportCode = 'basketball' | 'soccer' | 'volleyball' | 'tennis' | 'pickleball' | 'flag_football';
+
+// A row of the sports table: the code is stored on a game, the name is what screens show.
+export type Sport = { code: SportCode; name: string };
 export type JoinResult = 'joined' | 'waitlisted';
 
 export type Profile = {
@@ -33,7 +37,7 @@ export type Player = {
 export type GameRecord = {
   id: string;
   host: Profile;
-  sport: string;
+  sport: Sport;
   location: Location;
   startsAt: string; // ISO time
   durationMinutes: Duration;
@@ -52,7 +56,7 @@ export type Game = GameRecord & {
 
 // The campus comes from the location, so it is not sent.
 export type NewGame = {
-  sport: string;
+  sport: SportCode;
   locationId: string;
   startsAt: string;
   durationMinutes: Duration;

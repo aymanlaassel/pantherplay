@@ -85,7 +85,7 @@ describe('joinGame and leaveGame', () => {
 describe('createGame', () => {
   test('the new game can be read, is listed on its campus, and has the host in it', async () => {
     const created = await createGame({
-      sport: 'Tennis',
+      sport: 'tennis',
       locationId: 'loc-bbc',
       startsAt: new Date(Date.now() + 3_600_000).toISOString(),
       durationMinutes: 90,
@@ -93,7 +93,7 @@ describe('createGame', () => {
       skillLevel: 'advanced',
       notes: '',
     });
-    expect(created).toMatchObject({ sport: 'Tennis', maxPlayers: 4, spotsFilled: 1, myStatus: 'joined', notes: null });
+    expect(created).toMatchObject({ sport: { code: 'tennis', name: 'Tennis' }, maxPlayers: 4, spotsFilled: 1, myStatus: 'joined', notes: null });
     // The game gets the real spot, coordinates included, not a made-up one at 0,0.
     expect(await getGame(created.id)).toMatchObject({ location: { id: 'loc-bbc', campus: 'BBC', latitude: 25.9111 } });
     expect((await getGames('BBC')).map((game) => game.id)).toContain(created.id);
@@ -103,7 +103,7 @@ describe('createGame', () => {
     const before = (await getGames('MMC')).length;
     await expect(
       createGame({
-        sport: 'Tennis',
+        sport: 'tennis',
         locationId: 'made-up',
         startsAt: new Date(Date.now() + 3_600_000).toISOString(),
         durationMinutes: 60,

@@ -23,11 +23,8 @@ export function GameDetails({ form, errors, set }: GameDetailsProps) {
     <View style={styles.section}>
       <SportPicker
         sport={form.sport}
-        otherSport={form.otherSport}
         onSport={(sport) => set('sport', sport)}
-        onOtherSport={(text) => set('otherSport', text)}
         error={errors.sport}
-        otherError={errors.otherSport}
       />
       <WhenFields value={form.startsAt} onChange={(date) => set('startsAt', date)} error={errors.startsAt} />
       <DurationPicker minutes={form.durationMinutes} onMinutes={(minutes) => set('durationMinutes', minutes)} />

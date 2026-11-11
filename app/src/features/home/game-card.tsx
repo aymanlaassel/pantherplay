@@ -30,7 +30,7 @@ export function GameCard({ game, onPress }: GameCardProps) {
       />
       <View style={styles.body}>
         <View style={styles.row}>
-          <Text style={styles.title}>{game.sport}</Text>
+          <Text style={styles.title}>{game.sport.name}</Text>
           {status ? (
             <View style={styles.status}>
               <Icon name="check" color={colors.text.success} size={14} />

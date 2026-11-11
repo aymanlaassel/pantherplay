@@ -25,12 +25,12 @@ test('shows the greeting', async () => {
 
 test('a card opens that game', async () => {
   await render(<DiscoverScreen />);
-  await fireEvent.press(screen.getByText(GAMES[1].sport));
+  await fireEvent.press(screen.getByText(GAMES[1].sport.name));
   expect(router.push).toHaveBeenCalledWith(`/game/${GAMES[1].id}`);
 });
 
 test('the campus toggle starts on MMC and switches to that campus\'s games', async () => {
-  const titles = (campus: string) => GAMES.filter((game) => game.location.campus === campus).map((game) => game.sport);
+  const titles = (campus: string) => GAMES.filter((game) => game.location.campus === campus).map((game) => game.sport.name);
   await render(<DiscoverScreen />);
   expect(screen.getByRole('button', { name: 'MMC', selected: true })).toBeTruthy();
   for (const title of titles('MMC')) expect(screen.getByText(title)).toBeTruthy();

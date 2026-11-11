@@ -16,7 +16,6 @@ function nextHour(): Date {
 
 const initial = (): GameForm => ({
   sport: null,
-  otherSport: '',
   startsAt: nextHour(),
   durationMinutes: DURATIONS[0].minutes,
   campus: CAMPUSES[0],
@@ -30,7 +29,6 @@ const same = (a: unknown, b: unknown) => (a instanceof Date && b instanceof Date
 
 const STATUS_NAME: Record<keyof GameErrors, string> = {
   sport: 'sport',
-  otherSport: 'sport name',
   startsAt: 'time',
   location: 'place',
   players: 'players',
@@ -38,7 +36,7 @@ const STATUS_NAME: Record<keyof GameErrors, string> = {
 };
 
 // Empty-by-default fields stay quiet until the first Post press.
-const QUIET: (keyof GameErrors)[] = ['sport', 'otherSport', 'location'];
+const QUIET: (keyof GameErrors)[] = ['sport', 'location'];
 
 export function useGameForm() {
   const [form, setForm] = useState(initial);

@@ -19,7 +19,7 @@ jest.mock('react-native-safe-area-context', () => require('react-native-safe-are
 test('a game posted while Discover is in the background shows when the tab is focused again', async () => {
   await render(<DiscoverScreen />);
   await createGame({
-    sport: 'Tennis',
+    sport: 'tennis',
     locationId: 'loc-rec',
     startsAt: new Date(Date.now() + 3_600_000).toISOString(),
     durationMinutes: 60,

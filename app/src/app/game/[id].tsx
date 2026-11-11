@@ -41,7 +41,7 @@ export default function GameDetailScreen() {
       <ScrollView contentContainerStyle={[styles.content, { paddingTop: insets.top + space[16] }]}>
         <PhotoHeader onBack={goBack} />
         <View style={styles.titleRow}>
-          <Text style={styles.title}>{game.sport}</Text>
+          <Text style={styles.title}>{game.sport.name}</Text>
           {state === 'open' ? null : <BadgeStatus status={state} />}
         </View>
         <HostRow host={game.host} />

@@ -14,7 +14,7 @@ describe('applyFilters', () => {
   });
 
   test('filters by sport and skill level', () => {
-    expect(applyFilters(LISTED, { ...EMPTY_FILTERS, sport: 'Soccer' }).map((g) => g.id)).toEqual(['1']);
+    expect(applyFilters(LISTED, { ...EMPTY_FILTERS, sport: 'soccer' }).map((g) => g.id)).toEqual(['1']);
     expect(applyFilters(LISTED, { ...EMPTY_FILTERS, level: 'intermediate' }).map((g) => g.id)).toEqual(['2']);
   });
 
@@ -29,11 +29,11 @@ describe('applyFilters', () => {
   });
 
   test('filters combine with AND', () => {
-    expect(applyFilters(LISTED, { ...EMPTY_FILTERS, sport: 'Soccer', level: 'advanced' })).toEqual([]);
+    expect(applyFilters(LISTED, { ...EMPTY_FILTERS, sport: 'soccer', level: 'advanced' })).toEqual([]);
   });
 
   test('countActive counts only the chosen filters', () => {
     expect(countActive(EMPTY_FILTERS)).toBe(0);
-    expect(countActive({ ...EMPTY_FILTERS, sport: 'Soccer', time: 'evening' })).toBe(2);
+    expect(countActive({ ...EMPTY_FILTERS, sport: 'soccer', time: 'evening' })).toBe(2);
   });
 });
