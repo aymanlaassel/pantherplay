@@ -1,6 +1,7 @@
 // Every screen gets games from here. These return mock data and are replaced by Supabase calls in W3-08.
 import type { Campus } from '@/components/campus-toggle';
 import { mockGames } from '@/mock/games';
+import { LOCATIONS } from '@/mock/locations';
 import { ME } from '@/mock/people';
 
 import { delay } from './delay';
@@ -62,17 +63,16 @@ export async function leaveGame(id: string): Promise<void> {
 
 export async function createGame(input: NewGame): Promise<Game> {
   await delay();
+  // Like the location_id foreign key: only a spot from the fixed list is accepted.
+  const location = LOCATIONS.find((l) => l.id === input.locationId);
+  if (!location) throw new Error('Unknown location');
   created += 1;
-  const { campus, location, ...rest } = input;
+  const { locationId, ...rest } = input;
   const record: GameRecord = {
+    ...rest,
     id: `new-${created}`,
     host: ME,
-    sport: rest.sport,
-    location: { id: `new-loc-${created}`, campus, name: location, photoUrl: null, latitude: 0, longitude: 0 },
-    startsAt: rest.startsAt,
-    durationMinutes: rest.durationMinutes,
-    skillLevel: rest.skillLevel,
-    maxPlayers: rest.maxPlayers,
+    location,
     notes: rest.notes || null,
     status: 'open',
     players: [{ profile: ME, status: 'joined', joinedAt: new Date().toISOString() }],

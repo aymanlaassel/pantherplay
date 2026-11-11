@@ -1,4 +1,5 @@
 import { createGame, getGame, getGames, joinGame, leaveGame } from '@/api/games';
+import { getLocations } from '@/api/locations';
 import { resetMockGames } from '@/mock/games';
 
 jest.mock('@/api/delay', () => ({ delay: () => Promise.resolve() }));
@@ -85,8 +86,7 @@ describe('createGame', () => {
   test('the new game can be read, is listed on its campus, and has the host in it', async () => {
     const created = await createGame({
       sport: 'Tennis',
-      campus: 'BBC',
-      location: 'Courts',
+      locationId: 'loc-bbc',
       startsAt: new Date(Date.now() + 3_600_000).toISOString(),
       durationMinutes: 90,
       maxPlayers: 4,
@@ -94,7 +94,31 @@ describe('createGame', () => {
       notes: '',
     });
     expect(created).toMatchObject({ sport: 'Tennis', maxPlayers: 4, spotsFilled: 1, myStatus: 'joined', notes: null });
-    expect(await getGame(created.id)).toMatchObject({ location: { name: 'Courts', campus: 'BBC' } });
+    // The game gets the real spot, coordinates included, not a made-up one at 0,0.
+    expect(await getGame(created.id)).toMatchObject({ location: { id: 'loc-bbc', campus: 'BBC', latitude: 25.9111 } });
     expect((await getGames('BBC')).map((game) => game.id)).toContain(created.id);
+  });
+
+  test('a location that is not in the fixed list is rejected', async () => {
+    const before = (await getGames('MMC')).length;
+    await expect(
+      createGame({
+        sport: 'Tennis',
+        locationId: 'made-up',
+        startsAt: new Date(Date.now() + 3_600_000).toISOString(),
+        durationMinutes: 60,
+        maxPlayers: 4,
+        skillLevel: 'beginner',
+        notes: '',
+      }),
+    ).rejects.toThrow('Unknown location');
+    expect(await getGames('MMC')).toHaveLength(before);
+  });
+});
+
+describe('getLocations', () => {
+  test('lists only the spots on the asked campus', async () => {
+    expect((await getLocations('BBC')).map((l) => l.id)).toEqual(['loc-bbc']);
+    expect((await getLocations('MMC')).every((l) => l.campus === 'MMC')).toBe(true);
   });
 });

@@ -1,12 +1,12 @@
 import { StyleSheet, Text, View } from 'react-native';
 
 import { Chip } from '@/components/chip';
-import { Field } from '@/components/field';
 import { colors, space, typography } from '@/theme';
 
 import { DurationPicker } from './duration-picker';
 import { CAMPUSES } from './options';
 import { SportPicker } from './sport-picker';
+import { useLocations } from './use-locations';
 import type { GameErrors, GameForm } from './validate';
 import { WhenFields } from './when-fields';
 
@@ -17,6 +17,8 @@ type GameDetailsProps = {
 };
 
 export function GameDetails({ form, errors, set }: GameDetailsProps) {
+  const locations = useLocations(form.campus);
+
   return (
     <View style={styles.section}>
       <SportPicker
@@ -28,30 +30,44 @@ export function GameDetails({ form, errors, set }: GameDetailsProps) {
         otherError={errors.otherSport}
       />
       <WhenFields value={form.startsAt} onChange={(date) => set('startsAt', date)} error={errors.startsAt} />
-      <DurationPicker
-        minutes={form.durationMinutes}
-        customMinutes={form.customMinutes}
-        onMinutes={(minutes) => set('durationMinutes', minutes)}
-        onCustomMinutes={(text) => set('customMinutes', text)}
-        error={errors.duration}
-      />
+      <DurationPicker minutes={form.durationMinutes} onMinutes={(minutes) => set('durationMinutes', minutes)} />
       <View style={styles.group}>
         <Text style={styles.label}>Campus</Text>
         <View style={styles.chips}>
           {CAMPUSES.map((campus) => (
-            <Chip key={campus} label={campus} selected={form.campus === campus} onPress={() => set('campus', campus)} />
+            <Chip
+              key={campus}
+              label={campus}
+              selected={form.campus === campus}
+              onPress={() => {
+                set('campus', campus);
+                // A spot belongs to one campus, so switching campus clears it.
+                if (form.location?.campus !== campus) set('location', null);
+              }}
+            />
           ))}
         </View>
       </View>
-      <Field
-        label="Location"
-        required
-        value={form.location}
-        onChangeText={(text) => set('location', text)}
-        placeholder="Where are you playing?"
-        maxLength={60}
-        error={errors.location}
-      />
+      <View style={styles.group}>
+        <Text style={styles.label}>Location</Text>
+        {locations === null ? (
+          <Text style={styles.hint}>Loading places…</Text>
+        ) : locations === 'failed' ? (
+          <Text style={styles.error}>{"Couldn't load places. Switch campus to try again."}</Text>
+        ) : (
+          <View style={styles.chips}>
+            {locations.map((location) => (
+              <Chip
+                key={location.id}
+                label={location.name}
+                selected={form.location?.id === location.id}
+                onPress={() => set('location', location)}
+              />
+            ))}
+          </View>
+        )}
+        {errors.location ? <Text style={styles.error}>{errors.location}</Text> : null}
+      </View>
     </View>
   );
 }
@@ -61,4 +77,6 @@ const styles = StyleSheet.create({
   group: { gap: space[8] },
   label: { ...typography.Label, color: colors.text.primary },
   chips: { flexDirection: 'row', flexWrap: 'wrap', gap: space[8] },
+  hint: { ...typography.Caption, color: colors.text.muted },
+  error: { ...typography.Caption, color: colors.text.error },
 });

@@ -19,9 +19,8 @@ const initial = (): GameForm => ({
   otherSport: '',
   startsAt: nextHour(),
   durationMinutes: DURATIONS[0].minutes,
-  customMinutes: '',
   campus: CAMPUSES[0],
-  location: '',
+  location: null,
   players: MIN_PLAYERS,
   skill: SKILLS[0],
   notes: '',
@@ -33,14 +32,13 @@ const STATUS_NAME: Record<keyof GameErrors, string> = {
   sport: 'sport',
   otherSport: 'sport name',
   startsAt: 'time',
-  duration: 'duration',
   location: 'place',
   players: 'players',
   notes: 'notes',
 };
 
 // Empty-by-default fields stay quiet until the first Post press.
-const QUIET: (keyof GameErrors)[] = ['sport', 'otherSport', 'duration', 'location'];
+const QUIET: (keyof GameErrors)[] = ['sport', 'otherSport', 'location'];
 
 export function useGameForm() {
   const [form, setForm] = useState(initial);

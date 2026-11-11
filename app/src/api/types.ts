@@ -3,7 +3,8 @@ import type { SkillLevel } from '@/components/badge-level';
 import type { Campus } from '@/components/campus-toggle';
 
 export type GameStatus = 'open' | 'confirmed' | 'full' | 'cancelled' | 'completed';
-export type PlayerStatus = 'joined' | 'waitlisted' | 'left' | 'no_show';
+export type PlayerStatus = 'joined' | 'waitlisted' | 'left';
+export type Duration = 60 | 90 | 120;
 export type JoinResult = 'joined' | 'waitlisted';
 
 export type Profile = {
@@ -35,7 +36,7 @@ export type GameRecord = {
   sport: string;
   location: Location;
   startsAt: string; // ISO time
-  durationMinutes: number;
+  durationMinutes: Duration;
   skillLevel: SkillLevel;
   maxPlayers: number;
   notes: string | null;
@@ -49,12 +50,12 @@ export type Game = GameRecord & {
   myStatus: 'joined' | 'waitlisted' | null; // the signed-in user's place in this game
 };
 
+// The campus comes from the location, so it is not sent.
 export type NewGame = {
   sport: string;
-  campus: Campus;
-  location: string;
+  locationId: string;
   startsAt: string;
-  durationMinutes: number;
+  durationMinutes: Duration;
   maxPlayers: number;
   skillLevel: SkillLevel;
   notes: string;
