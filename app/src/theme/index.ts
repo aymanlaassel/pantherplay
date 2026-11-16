@@ -69,3 +69,12 @@ export const typography = {
 export const space = { 4: 4, 8: 8, 12: 12, 16: 16, 20: 20 } as const;
 
 export const radius = { card: 16, pill: 999 } as const;
+
+// Google's own brand colors for the "Continue with Google" button. These come from Google's
+// sign-in branding guidelines (light theme), not from our Figma, so they live apart from `colors`.
+// https://developers.google.com/identity/branding-guidelines
+export const google = {
+  fill: '#FFFFFF',
+  stroke: '#747775',
+  text: '#1F1F1F',
+} as const;

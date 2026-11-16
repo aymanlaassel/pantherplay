@@ -3,8 +3,10 @@ import { router } from 'expo-router';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { BadgeStatus } from '@/components/badge-status';
+import { ButtonOutline } from '@/components/button-outline';
 import { Icon } from '@/components/icon';
 import { InitialsAvatar } from '@/components/initials-avatar';
+import { signOut } from '@/lib/auth';
 import { formatTimeRange } from '@/lib/format-time';
 import { colors, radius, space, typography } from '@/theme';
 
@@ -113,6 +115,9 @@ export function ProfileContent({ user }: { user: ProfileUser }) {
           <Text style={styles.statLabel}>Games canceled after scheduling or joining</Text>
         </View>
       </View>
+
+      {/* TEMPORARY: lets us test the auth gate until Settings has a real Sign out. Remove then. */}
+      <ButtonOutline label="Sign out" onPress={signOut} style={styles.signOut} />
     </ScrollView>
   );
 }
@@ -127,6 +132,7 @@ function Stat({ value, label }: { value: number | string; label: string }) {
 }
 
 const styles = StyleSheet.create({
+  signOut: { marginTop: space[20] },
   container: {
     flex: 1,
     backgroundColor: colors.bg.screen,
