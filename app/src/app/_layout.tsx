@@ -25,10 +25,11 @@ export default function RootLayout() {
   const [sessionChecked, setSessionChecked] = useState(false);
 
   useEffect(() => {
-    getSession().then((saved) => {
-      setSession(saved);
-      setSessionChecked(true);
-    });
+    // If reading the saved session fails, treat it as signed out instead of staying blank forever.
+    getSession()
+      .then(setSession)
+      .catch(() => setSession(null))
+      .finally(() => setSessionChecked(true));
     return onAuthChange(setSession);
   }, []);
 
@@ -49,6 +50,7 @@ export default function RootLayout() {
       <Stack>
         <Stack.Protected guard={signedIn}>
           <Stack.Screen name="(tabs)" options={{headerShown: false}} />
+          <Stack.Screen name="(onboarding)" options={{headerShown: false}} />
           <Stack.Screen name="game/[id]" options={{headerShown: false}} />
           <Stack.Screen name="notifications" options={{headerShown: false}} />
           <Stack.Screen name="settings/index" options={{headerShown: false}} />

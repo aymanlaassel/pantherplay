@@ -98,3 +98,20 @@ export function onAuthChange(callback: (session: Session | null) => void): () =>
   const {data} = supabase.auth.onAuthStateChange((_event, session) => callback(session));
   return () => data.subscription.unsubscribe();
 }
+
+// The name and photo the login provider (Google for now) gave us, so onboarding can prefill them.
+// Either can be null: not every account has a photo.
+export type ProviderProfile = { name: string | null; photoUrl: string | null };
+
+export async function getProviderProfile(): Promise<ProviderProfile> {
+  const session = await getSession();
+  if (!session) {
+    return { name: null, photoUrl: null };
+  }
+  // Google puts these in user_metadata. Some accounts use `picture` instead of `avatar_url`.
+  const metadata = session.user.user_metadata;
+  return {
+    name: metadata.full_name ?? metadata.name ?? null,
+    photoUrl: metadata.avatar_url ?? metadata.picture ?? null,
+  };
+}
