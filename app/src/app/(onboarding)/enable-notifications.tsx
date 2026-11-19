@@ -42,8 +42,13 @@ function BellArt() {
 
 export default function NotificationsOnboardingScreen() {
   // Shows the phone's own "Allow notifications?" prompt. Whatever they pick, we move on.
+  // If the prompt itself fails (some simulators, Expo Go), still finish so nobody gets stuck here.
   const onFinish = async () => {
-    await Notifications.requestPermissionsAsync();
+    try {
+      await Notifications.requestPermissionsAsync();
+    } catch {
+      // Ignored on purpose: notifications are optional.
+    }
     await goToDiscover();
   };
 
