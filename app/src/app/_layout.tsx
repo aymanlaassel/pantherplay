@@ -25,10 +25,11 @@ export default function RootLayout() {
   const [sessionChecked, setSessionChecked] = useState(false);
 
   useEffect(() => {
-    getSession().then((saved) => {
-      setSession(saved);
-      setSessionChecked(true);
-    });
+    // If reading the saved session fails, treat it as signed out instead of staying blank forever.
+    getSession()
+      .then(setSession)
+      .catch(() => setSession(null))
+      .finally(() => setSessionChecked(true));
     return onAuthChange(setSession);
   }, []);
 

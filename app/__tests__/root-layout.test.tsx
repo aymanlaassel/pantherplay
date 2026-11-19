@@ -95,6 +95,12 @@ describe('auth gate', () => {
     }
   });
 
+  test('if reading the saved session fails, shows Welcome instead of a blank screen', async () => {
+    mockGetSession.mockRejectedValue(new Error('storage broke'));
+    await render(<RootLayout />);
+    expect(screen.getByText('screen:(auth)')).toBeTruthy();
+  });
+
   test('signed in: the tabs can be reached and Welcome cannot', async () => {
     mockGetSession.mockResolvedValue(SESSION);
     await render(<RootLayout />);
