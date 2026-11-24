@@ -1,14 +1,24 @@
 // Figma: Notifications (147:855). Pushed from the bell on Home.
 import { Image } from 'expo-image';
 import { router } from 'expo-router';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useEffect, useState } from 'react';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { getNotifications } from '@/api/notifications';
+import { ButtonOutline } from '@/components/button-outline';
 import { NotificationRow, type AppNotification } from '@/components/notification-row';
-import { MOCK_NOTIFICATIONS } from '@/mock/notifications';
 import { colors, fonts, space, typography } from '@/theme';
 
-export function NotificationsView({ notifications }: { notifications: AppNotification[] }) {
+type LoadStatus = 'loading' | 'error' | 'ready';
+
+type NotificationsViewProps = {
+  notifications: AppNotification[];
+  status?: LoadStatus;
+  onRetry?: () => void;
+};
+
+export function NotificationsView({ notifications, status = 'ready', onRetry }: NotificationsViewProps) {
   const insets = useSafeAreaInsets();
   const sections = [
     { label: 'New', rows: notifications.filter((n) => n.unread) },
@@ -29,7 +39,16 @@ export function NotificationsView({ notifications }: { notifications: AppNotific
         </View>
         <Text style={styles.title}>Notifications</Text>
       </View>
-      {sections.length === 0 ? (
+      {status === 'loading' ? (
+        <View style={styles.empty}>
+          <ActivityIndicator accessibilityLabel="Loading notifications" color={colors.icon.active} />
+        </View>
+      ) : status === 'error' ? (
+        <View style={[styles.empty, styles.error]}>
+          <Text style={styles.emptyText}>{"Couldn't load notifications."}</Text>
+          {onRetry && <ButtonOutline label="Try again" onPress={onRetry} />}
+        </View>
+      ) : sections.length === 0 ? (
         <View style={styles.empty}>
           <Text style={styles.emptyText}>You&apos;re all caught up</Text>
         </View>
@@ -50,7 +69,30 @@ export function NotificationsView({ notifications }: { notifications: AppNotific
 }
 
 export default function NotificationsScreen() {
-  return <NotificationsView notifications={MOCK_NOTIFICATIONS} />;
+  const [attempt, setAttempt] = useState(0);
+  const [notifications, setNotifications] = useState<AppNotification[] | null>(null);
+  const [failed, setFailed] = useState(false);
+
+  useEffect(() => {
+    // Ignore the answer if the screen closed or a retry started while it was on its way.
+    let current = true;
+    getNotifications().then(
+      (list) => current && setNotifications(list),
+      () => current && setFailed(true),
+    );
+    return () => {
+      current = false;
+    };
+  }, [attempt]);
+
+  const retry = () => {
+    setFailed(false);
+    setNotifications(null);
+    setAttempt((n) => n + 1);
+  };
+
+  const status: LoadStatus = failed ? 'error' : notifications ? 'ready' : 'loading';
+  return <NotificationsView notifications={notifications ?? []} status={status} onRetry={retry} />;
 }
 
 const styles = StyleSheet.create({
@@ -71,4 +113,5 @@ const styles = StyleSheet.create({
   },
   empty: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   emptyText: { ...typography['Body/Medium'], color: colors.text.muted },
+  error: { gap: space[12] },
 });

@@ -1,122 +1,49 @@
-import { Pressable, Text, View, ScrollView } from 'react-native';
+// The Map tab: the games at a campus as pins, plus a sheet listing them. Same games as Discover.
+import { ActivityIndicator, Pressable, Text, View, ScrollView } from 'react-native';
 import { useRef, useState } from 'react';
 import MapView, { Marker } from 'react-native-maps';
 import { router } from 'expo-router';
 
+import type { Game, SportCode } from '@/api/types';
 import { BadgeStatus } from '@/components/badge-status';
+import { ButtonOutline } from '@/components/button-outline';
 import { CampusToggle, type Campus } from '@/components/campus-toggle';
 import { MapGamePin } from '@/components/map-game-pin';
 import { MapGameRow } from '@/components/map-game-row';
+import { useGames } from '@/features/home/use-games';
 import { colors, radius, space, typography } from '@/theme';
-import { todayAt } from '@/mock/today-at';
-
-type Game = {
-  id: string;
-  name: string;
-  sport: 'soccer' | 'basketball' | 'volleyball';
-  location_id: string;
-  spots_left: number;
-  starts_at: string; // timestamptz from the DB, as an ISO string
-};
-
-type Location = {
-  id: string;
-  campus: Campus;
-  name: string;
-  photo_url: string | null;
-  latitude: number;
-  longitude: number;
-};
 
 // TODO: for asad's brainstorm: can pass image prop on marker, for custom marker
 // TODO: for asad's brainstorm: callout element when marker pressed?
-
-// Ids 1 to 3 are the same games on Home, Map and Game detail.
-const mockGames: Game[] = [
-  {
-    id: '1',
-    name: '5v5 Soccer',
-    sport: 'soccer',
-    location_id: 'l-field',
-    spots_left: 3,
-    starts_at: todayAt(19),
-  },
-  {
-    id: '2',
-    name: 'Pickup Basketball',
-    sport: 'basketball',
-    location_id: 'l-rec',
-    spots_left: 1,
-    starts_at: todayAt(18, 30),
-  },
-  {
-    id: '3',
-    name: 'Sand Volleyball',
-    sport: 'volleyball',
-    location_id: 'l-bbc',
-    spots_left: 5,
-    starts_at: todayAt(17),
-  },
-];
-
-const mockLocations: Location[] = [
-  {
-    id: 'l-field',
-    campus: 'MMC',
-    name: 'Panther Field',
-    photo_url: 'https://picsum.photos/seed/panther-field/800/400',
-    latitude: 25.7538,
-    longitude: -80.3722,
-  },
-  {
-    id: 'l-rec',
-    campus: 'MMC',
-    name: 'Rec Center Courts',
-    photo_url: 'https://picsum.photos/seed/rec-center/800/400',
-    latitude: 25.7572,
-    longitude: -80.3781,
-  },
-  {
-    id: 'l-bbc',
-    campus: 'BBC',
-    name: 'BBC Recreation Field',
-    photo_url: null,
-    latitude: 25.9126,
-    longitude: -80.1411,
-  },
-];
-
-// Games the signed-in user has joined. Will come from the DB once auth exists.
-const mockMyGameIds = ['2'];
 
 const CAMPUS_REGIONS = {
   MMC: { latitude: 25.7563, longitude: -80.3755, latitudeDelta: 0.012, longitudeDelta: 0.012 },
   BBC: { latitude: 25.9107, longitude: -80.1392, latitudeDelta: 0.012, longitudeDelta: 0.012 },
 };
 
-const SPORT_EMOJI = { soccer: '⚽', basketball: '🏀', volleyball: '🏐' };
+const SPORT_EMOJI: Record<SportCode, string> = {
+  soccer: '⚽',
+  basketball: '🏀',
+  volleyball: '🏐',
+  tennis: '🎾',
+  pickleball: '🏓',
+  flag_football: '🏈',
+};
 
 // Collapsed, the sheet shows its header plus the first game row in full.
 const SHEET_COLLAPSED_HEIGHT = 176;
 
-const findLocation = (game: Game) => mockLocations.find((location) => location.id === game.location_id);
-
 // Shows the time in the phone's timezone, e.g. "7:00 PM".
 const formatTime = (iso: string) =>
   new Date(iso).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
-
-// True if the game is on today's date (in the phone's timezone).
-const isToday = (iso: string) => new Date(iso).toDateString() === new Date().toDateString();
 
 export default function MapScreen() {
   const mapRef = useRef<MapView>(null);
   const [campus, setCampus] = useState<Campus>('MMC');
   const [selectedGame, setSelectedGame] = useState<Game | null>(null);
   const [expanded, setExpanded] = useState(false);
-
-  const visibleGames = mockGames
-    .filter((game) => findLocation(game)?.campus === campus && isToday(game.starts_at))
-    .sort((a, b) => a.starts_at.localeCompare(b.starts_at));
+  // The same call Discover makes, so both tabs always show the same games for a campus.
+  const { games: visibleGames, status, retry } = useGames(campus);
 
   // First tap: highlight the game and move the map to it. Second tap: open the game's page.
   const selectGame = (game: Game) => {
@@ -125,11 +52,9 @@ export default function MapScreen() {
       return;
     }
     setSelectedGame(game);
-    const location = findLocation(game);
-    if (!location) return;
     mapRef.current?.animateToRegion({
-      latitude: location.latitude,
-      longitude: location.longitude,
+      latitude: game.location.latitude,
+      longitude: game.location.longitude,
       latitudeDelta: 0.006,
       longitudeDelta: 0.006,
     });
@@ -144,21 +69,16 @@ export default function MapScreen() {
   return (
     <View style={{ flex: 1 }}>
       <MapView ref={mapRef} style={{ flex: 1 }} initialRegion={CAMPUS_REGIONS.MMC}>
-        {visibleGames.map((game) => {
-          const location = findLocation(game);
-          if (!location) return null;
-
-          return (
-            <Marker
-              key={game.id}
-              coordinate={{ latitude: location.latitude, longitude: location.longitude }}
-              anchor={{ x: 0.5, y: 1 }}
-              onPress={() => selectGame(game)}
-              tracksViewChanges={true}>
-              <MapGamePin emoji={SPORT_EMOJI[game.sport]} selected={selectedGame?.id === game.id} />
-            </Marker>
-          );
-        })}
+        {visibleGames.map((game) => (
+          <Marker
+            key={game.id}
+            coordinate={{ latitude: game.location.latitude, longitude: game.location.longitude }}
+            anchor={{ x: 0.5, y: 1 }}
+            onPress={() => selectGame(game)}
+            tracksViewChanges={true}>
+            <MapGamePin emoji={SPORT_EMOJI[game.sport.code]} selected={selectedGame?.id === game.id} />
+          </Marker>
+        ))}
       </MapView>
 
       <CampusToggle
@@ -183,9 +103,11 @@ export default function MapScreen() {
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
           <View>
             <Text style={{ ...typography.Price, color: colors.text.primary }}>Games near {campus}</Text>
-            <Text style={{ ...typography['Body/Medium'], color: colors.text.muted, marginTop: space[4] }}>
-              {visibleGames.length} games today · sorted by start time
-            </Text>
+            {status === 'ready' && (
+              <Text style={{ ...typography['Body/Medium'], color: colors.text.muted, marginTop: space[4] }}>
+                {visibleGames.length} games · sorted by start time
+              </Text>
+            )}
           </View>
 
           <Pressable
@@ -205,14 +127,23 @@ export default function MapScreen() {
         </View>
 
         <ScrollView style={{ marginTop: space[12] }} contentContainerStyle={{ gap: space[8], paddingBottom: space[20] }}>
+          {status === 'loading' && <ActivityIndicator accessibilityLabel="Loading games" color={colors.icon.active} />}
+          {status === 'error' && (
+            <View style={{ gap: space[12] }}>
+              <Text style={{ ...typography['Body/Regular'], color: colors.text.muted, textAlign: 'center' }}>
+                {"Couldn't load games."}
+              </Text>
+              <ButtonOutline label="Try again" onPress={retry} />
+            </View>
+          )}
           {visibleGames.map((game) => (
             <MapGameRow
               key={game.id}
-              emoji={SPORT_EMOJI[game.sport]}
-              title={game.name}
-              details={`${findLocation(game)?.name} · ${formatTime(game.starts_at)}`}
-              spotsLeft={game.spots_left}
-              badge={mockMyGameIds.includes(game.id) ? <BadgeStatus status="joined" style={{ alignSelf: 'flex-end' }} /> : undefined}
+              emoji={SPORT_EMOJI[game.sport.code]}
+              title={game.sport.name}
+              details={`${game.location.name} · ${formatTime(game.startsAt)}`}
+              spotsLeft={Math.max(game.maxPlayers - game.spotsFilled, 0)}
+              badge={game.myStatus === 'joined' ? <BadgeStatus status="joined" style={{ alignSelf: 'flex-end' }} /> : undefined}
               selected={selectedGame?.id === game.id}
               onPress={() => selectGame(game)}
             />

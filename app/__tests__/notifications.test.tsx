@@ -4,11 +4,13 @@ import { StyleSheet } from 'react-native';
 
 import { initials, NotificationLeading } from '@/components/notification-leading';
 import { NOTIFICATION_LEADING, NotificationRow, type NotificationType } from '@/components/notification-row';
+import * as notificationsApi from '@/api/notifications';
 import NotificationsScreen, { NotificationsView } from '@/app/notifications';
 import { MOCK_NOTIFICATIONS } from '@/mock/notifications';
 import { colors, typography } from '@/theme';
 
 jest.mock('expo-router', () => ({ router: { back: jest.fn() } }));
+jest.mock('@/api/delay', () => ({ delay: () => Promise.resolve() }));
 jest.mock('react-native-safe-area-context', () => require('react-native-safe-area-context/jest/mock').default);
 
 const types = Object.keys(NOTIFICATION_LEADING) as NotificationType[];
@@ -154,5 +156,40 @@ describe('empty state', () => {
   test('the empty message is hidden when there are notifications', async () => {
     await render(<NotificationsScreen />);
     expect(screen.queryByText("You're all caught up")).toBeNull();
+  });
+});
+
+describe('loading through src/api/', () => {
+  afterEach(() => jest.restoreAllMocks());
+
+  test('the screen shows what getNotifications returns', async () => {
+    const one = MOCK_NOTIFICATIONS.slice(0, 1);
+    const load = jest.spyOn(notificationsApi, 'getNotifications').mockResolvedValue(one);
+    await render(<NotificationsScreen />);
+    expect(load).toHaveBeenCalledTimes(1);
+    expect(screen.getByText(one[0].title)).toBeTruthy();
+    expect(screen.queryByText(MOCK_NOTIFICATIONS[1].title)).toBeNull();
+  });
+
+  test('shows a spinner while notifications load', async () => {
+    jest.spyOn(notificationsApi, 'getNotifications').mockReturnValue(new Promise(() => {}));
+    await render(<NotificationsScreen />);
+    expect(screen.getByLabelText('Loading notifications')).toBeTruthy();
+    expect(screen.queryByText("You're all caught up")).toBeNull();
+  });
+
+  test('shows an error when loading fails, and Try again reloads', async () => {
+    const load = jest
+      .spyOn(notificationsApi, 'getNotifications')
+      .mockRejectedValueOnce(new Error('offline'))
+      .mockResolvedValueOnce(MOCK_NOTIFICATIONS);
+    await render(<NotificationsScreen />);
+    expect(screen.getByText("Couldn't load notifications.")).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Back' })).toBeTruthy();
+
+    await fireEvent.press(screen.getByText('Try again'));
+    expect(load).toHaveBeenCalledTimes(2);
+    expect(screen.queryByText("Couldn't load notifications.")).toBeNull();
+    expect(screen.getByText(MOCK_NOTIFICATIONS[0].title)).toBeTruthy();
   });
 });
