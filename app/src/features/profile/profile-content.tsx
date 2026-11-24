@@ -9,7 +9,7 @@ import { ButtonOutline } from '@/components/button-outline';
 import { Icon } from '@/components/icon';
 import { InitialsAvatar } from '@/components/initials-avatar';
 import { signOut } from '@/lib/auth';
-import { endsAt, formatTimeRange } from '@/lib/format-time';
+import { endsAt, formatDay, formatTimeRange } from '@/lib/format-time';
 import { initials } from '@/lib/initials';
 import { colors, radius, space, typography } from '@/theme';
 
@@ -20,13 +20,6 @@ const OUTLINE_WIDTH = 2;
 
 // "Panther Student" -> "Panther". With no name at all it greets "Panther", like Discover.
 const firstName = (fullName: string) => fullName.trim().split(/\s+/)[0] || 'Panther';
-
-// "Today" for today's games, otherwise a short date like "Thu, Nov 27", in the phone's timezone.
-const dayLabel = (iso: string) => {
-  const date = new Date(iso);
-  if (date.toDateString() === new Date().toDateString()) return 'Today';
-  return date.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' });
-};
 
 type ProfileContentProps = {
   profile: Profile;
@@ -83,7 +76,7 @@ export function ProfileContent({ profile, nextGame }: ProfileContentProps) {
             <View style={styles.detailRow}>
               <Icon name="calendar" color={colors.icon.active} size={ICON_SIZE} />
               <Text style={styles.detail}>
-                {`${dayLabel(nextGame.startsAt)}, ${formatTimeRange(
+                {`${formatDay(nextGame.startsAt)}, ${formatTimeRange(
                   nextGame.startsAt,
                   endsAt(nextGame.startsAt, nextGame.durationMinutes),
                 )}`}
