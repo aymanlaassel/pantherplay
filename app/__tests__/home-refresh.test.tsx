@@ -14,6 +14,7 @@ jest.mock('expo-router', () => ({
   },
 }));
 jest.mock('@/api/delay', () => ({ delay: () => Promise.resolve() }));
+jest.mock('@/api/games', () => require('@/mock/games-api'));
 jest.mock('react-native-safe-area-context', () => require('react-native-safe-area-context/jest/mock').default);
 
 test('a game posted while Discover is in the background shows when the tab is focused again', async () => {

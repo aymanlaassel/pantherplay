@@ -3,15 +3,14 @@ import { fireEvent, render, screen } from '@testing-library/react-native';
 
 import * as api from '@/api/games';
 import GameDetailScreen from '@/app/game/[id]';
-import type { JoinResult } from '@/api/types';
-import { mockGames, resetMockGames } from '@/mock/games';
-import { ME } from '@/mock/people';
+import { resetMockGames } from '@/mock/games';
 
 jest.mock('expo-router', () => ({
   router: { back: jest.fn(), replace: jest.fn(), canGoBack: jest.fn(() => true) },
   useLocalSearchParams: jest.fn(),
 }));
 jest.mock('@/api/delay', () => ({ delay: () => Promise.resolve() }));
+jest.mock('@/api/games', () => require('@/mock/games-api'));
 jest.mock('react-native-safe-area-context', () => require('react-native-safe-area-context/jest/mock').default);
 
 const open = async (id: string) => {
@@ -19,31 +18,9 @@ const open = async (id: string) => {
   await render(<GameDetailScreen />);
 };
 
-// The database is not under test here (api-games and the SQL tests cover it). These stand in
-// for join_game and leave_game by changing the mock games, so the reloaded page shows the result.
-const fakeJoin = async (id: string): Promise<JoinResult> => {
-  const game = mockGames().find((g) => g.id === id);
-  if (!game) throw new Error('Game not found');
-  const full = game.players.filter((p) => p.status === 'joined').length >= game.maxPlayers;
-  const status: JoinResult = full ? 'waitlisted' : 'joined';
-  const mine = game.players.find((p) => p.profile.id === ME.id);
-  if (mine) Object.assign(mine, { status, joinedAt: new Date().toISOString() });
-  else game.players.push({ profile: ME, status, joinedAt: new Date().toISOString() });
-  return status;
-};
-
-const fakeLeave = async (id: string): Promise<void> => {
-  const mine = mockGames().find((g) => g.id === id)?.players.find((p) => p.profile.id === ME.id);
-  if (mine) mine.status = 'left';
-};
-
 beforeEach(() => resetMockGames());
 
 describe('Join and Leave', () => {
-  beforeEach(() => {
-    jest.spyOn(api, 'joinGame').mockImplementation(fakeJoin);
-    jest.spyOn(api, 'leaveGame').mockImplementation(fakeLeave);
-  });
   afterEach(() => jest.restoreAllMocks());
 
   test('shows the answer the database gave, not one the app worked out', async () => {

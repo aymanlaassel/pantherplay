@@ -12,6 +12,7 @@ jest.mock('@react-native-community/datetimepicker', () => ({
 }));
 jest.mock('@/api/games', () => ({ createGame: jest.fn() }));
 jest.mock('@/api/delay', () => ({ delay: () => Promise.resolve() }));
+jest.mock('@/api/locations', () => require('@/mock/locations-api'));
 jest.mock('expo-router', () => ({ router: { back: jest.fn(), replace: jest.fn(), canGoBack: jest.fn(() => true) } }));
 jest.mock('react-native-safe-area-context', () => require('react-native-safe-area-context/jest/mock').default);
 

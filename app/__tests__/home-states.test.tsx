@@ -7,7 +7,7 @@ import { mockGames } from '@/mock/games';
 
 jest.mock('expo-router', () => ({ router: { push: jest.fn() }, useFocusEffect: (effect: () => void) => require('react').useEffect(effect, [effect]) }));
 jest.mock('react-native-safe-area-context', () => require('react-native-safe-area-context/jest/mock').default);
-jest.mock('@/api/games', () => ({ ...jest.requireActual('@/api/games'), getGames: jest.fn() }));
+jest.mock('@/api/games', () => ({ ...jest.requireActual('@/mock/games-api'), getGames: jest.fn() }));
 
 const GAMES: Game[] = mockGames()
   .slice(0, 3)

@@ -11,6 +11,7 @@ jest.mock('expo-router', () => ({
   useFocusEffect: (effect: () => void) => require('react').useEffect(effect, [effect]),
 }));
 jest.mock('@/api/delay', () => ({ delay: () => Promise.resolve() }));
+jest.mock('@/api/games', () => require('@/mock/games-api'));
 // The native map can't run in Jest: stand in plain views. A Marker is pressable like the real one.
 jest.mock('react-native-maps', () => {
   const React = jest.requireActual('react');

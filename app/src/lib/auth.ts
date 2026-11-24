@@ -91,6 +91,11 @@ export async function getSession(): Promise<Session | null> {
   return data.session;
 }
 
+// The signed-in user's Supabase id (what everything is keyed on), or null if nobody is signed in.
+export async function getUserId(): Promise<string | null> {
+  const session = await getSession();
+  return session?.user.id ?? null;
+}
 
 // Calls `callback` whenever someone signs in or out, or their session is refreshed.
 // Returns a function that stops listening; call it when the screen goes away.

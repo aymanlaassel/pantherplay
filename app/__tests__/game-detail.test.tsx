@@ -14,6 +14,7 @@ jest.mock('expo-router', () => ({
   useLocalSearchParams: jest.fn(),
 }));
 jest.mock('@/api/delay', () => ({ delay: () => Promise.resolve() }));
+jest.mock('@/api/games', () => require('@/mock/games-api'));
 jest.mock('react-native-safe-area-context', () => require('react-native-safe-area-context/jest/mock').default);
 
 const open = async (id: string) => {
