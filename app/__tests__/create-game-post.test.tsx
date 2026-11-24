@@ -23,7 +23,7 @@ describe('posting', () => {
   };
 
   test('Post game creates the game and opens its page', async () => {
-    jest.mocked(createGame).mockResolvedValueOnce({ id: 'new-1' } as Awaited<ReturnType<typeof createGame>>);
+    jest.mocked(createGame).mockResolvedValueOnce('new-1');
     await fill();
     await fireEvent.press(screen.getByText('Post game'));
     expect(createGame).toHaveBeenCalledWith({

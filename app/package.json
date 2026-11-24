@@ -60,6 +60,7 @@
   "jest": {
     "preset": "jest-expo",
     "resolver": "react-native-reanimated/jest/resolver",
+    "setupFiles": ["<rootDir>/jest.setup.ts"],
     "moduleNameMapper": {
       "^@/assets/(.*)$": "<rootDir>/assets/$1",
       "^@/(.*)$": "<rootDir>/src/$1"

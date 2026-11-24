@@ -1,10 +1,20 @@
 import { createGame, getGame, getGames, joinGame, leaveGame } from '@/api/games';
 import { getLocations } from '@/api/locations';
+import type { NewGame } from '@/api/types';
+import { supabase } from '@/lib/supabase';
 import { mockGames, resetMockGames } from '@/mock/games';
 
 jest.mock('@/api/delay', () => ({ delay: () => Promise.resolve() }));
 
-beforeEach(() => resetMockGames());
+const rpc = supabase.rpc as jest.Mock;
+// What supabase.rpc resolves to: the function's answer, or the error Postgres raised.
+const answers = (data: unknown) => rpc.mockResolvedValueOnce({ data, error: null });
+const fails = (message: string) => rpc.mockResolvedValueOnce({ data: null, error: { message } });
+
+beforeEach(() => {
+  resetMockGames();
+  rpc.mockClear();
+});
 
 describe('getGames', () => {
   test('lists a campus soonest first and hides cancelled games', async () => {
@@ -38,81 +48,99 @@ describe('getGame', () => {
   });
 });
 
-describe('joinGame and leaveGame', () => {
-  test('joining a game with room answers joined and takes a spot', async () => {
-    expect(await joinGame('1')).toBe('joined');
-    expect(await getGame('1')).toMatchObject({ spotsFilled: 8, myStatus: 'joined' });
+describe('joinGame', () => {
+  test('asks join_game and answers joined', async () => {
+    answers('joined');
+    expect(await joinGame('game-1')).toBe('joined');
+    expect(rpc).toHaveBeenCalledWith('join_game', { p_game_id: 'game-1' });
   });
 
-  test('joining a full game answers waitlisted and takes no spot', async () => {
-    expect(await joinGame('full')).toBe('waitlisted');
-    expect(await getGame('full')).toMatchObject({ spotsFilled: 10, myStatus: 'waitlisted' });
+  test('answers waitlisted when the database says the game is full', async () => {
+    answers('waitlisted');
+    expect(await joinGame('game-1')).toBe('waitlisted');
   });
 
-  test('joining twice does not add a second spot', async () => {
-    await joinGame('1');
-    expect(await joinGame('1')).toBe('joined');
-    expect(await getGame('1')).toMatchObject({ spotsFilled: 8 });
+  test('passes on what the database rejected, like a cancelled or started game', async () => {
+    fails('Game is cancelled');
+    await expect(joinGame('game-1')).rejects.toThrow('Game is cancelled');
+    fails('Game has already started');
+    await expect(joinGame('game-1')).rejects.toThrow('Game has already started');
   });
 
-  test('leaving gives the spot back, and leaving a waitlist keeps the game full', async () => {
-    await joinGame('1');
-    await leaveGame('1');
-    expect(await getGame('1')).toMatchObject({ spotsFilled: 7, myStatus: null });
-
-    await joinGame('full');
-    await leaveGame('full');
-    expect(await getGame('full')).toMatchObject({ spotsFilled: 10, myStatus: null });
+  test('throws when the network or the session fails', async () => {
+    rpc.mockRejectedValueOnce(new TypeError('Network request failed'));
+    await expect(joinGame('game-1')).rejects.toThrow('Network request failed');
+    fails('permission denied for function join_game'); // signed out mid-action
+    await expect(joinGame('game-1')).rejects.toThrow();
   });
 
-  test('a game can be joined again after leaving it', async () => {
-    await joinGame('1');
-    await leaveGame('1');
-    expect(await joinGame('1')).toBe('joined');
-    expect(await getGame('1')).toMatchObject({ spotsFilled: 8, myStatus: 'joined' });
+  test('throws instead of guessing when the answer is not joined or waitlisted', async () => {
+    answers(null);
+    await expect(joinGame('game-1')).rejects.toThrow('Unexpected answer');
+    answers('left');
+    await expect(joinGame('game-1')).rejects.toThrow('Unexpected answer');
+  });
+});
+
+describe('leaveGame', () => {
+  test('asks leave_game', async () => {
+    answers(null);
+    await expect(leaveGame('game-1')).resolves.toBeUndefined();
+    expect(rpc).toHaveBeenCalledWith('leave_game', { p_game_id: 'game-1' });
   });
 
-  test('a cancelled game cannot be joined', async () => {
-    await expect(joinGame('cancelled')).rejects.toThrow('cancelled');
-  });
-
-  test('an unknown game cannot be joined or left', async () => {
-    await expect(joinGame('nope')).rejects.toThrow();
-    await expect(leaveGame('nope')).rejects.toThrow();
+  test('passes on a database error', async () => {
+    fails('Game not found');
+    await expect(leaveGame('nope')).rejects.toThrow('Game not found');
   });
 });
 
 describe('createGame', () => {
-  test('the new game can be read, is listed on its campus, and has the host in it', async () => {
-    const created = await createGame({
-      sport: 'tennis',
-      locationId: 'loc-bbc',
-      startsAt: new Date(Date.now() + 3_600_000).toISOString(),
-      durationMinutes: 90,
-      maxPlayers: 4,
-      skillLevel: 'advanced',
-      notes: '',
+  const input: NewGame = {
+    sport: 'flag_football',
+    locationId: 'a3f1c2d4-0000-4000-8000-000000000001',
+    startsAt: '2026-12-01T23:00:00.000Z',
+    durationMinutes: 90,
+    maxPlayers: 14,
+    skillLevel: 'intermediate',
+    notes: 'Bring cleats',
+  };
+
+  test('sends every field to create_game, sport by code, and returns the new id', async () => {
+    answers('new-game-id');
+    expect(await createGame(input)).toBe('new-game-id');
+    expect(rpc).toHaveBeenCalledWith('create_game', {
+      p_sport: 'flag_football',
+      p_location_id: 'a3f1c2d4-0000-4000-8000-000000000001',
+      p_starts_at: '2026-12-01T23:00:00.000Z',
+      p_duration_minutes: 90,
+      p_max_players: 14,
+      p_skill_level: 'intermediate',
+      p_notes: 'Bring cleats',
     });
-    expect(created).toMatchObject({ sport: { code: 'tennis', name: 'Tennis' }, maxPlayers: 4, spotsFilled: 1, myStatus: 'joined', notes: null });
-    // The game gets the real spot, coordinates included, not a made-up one at 0,0.
-    expect(await getGame(created.id)).toMatchObject({ location: { id: 'loc-bbc', campus: 'BBC', latitude: 25.9111 } });
-    expect((await getGames('BBC')).map((game) => game.id)).toContain(created.id);
   });
 
-  test('a location that is not in the fixed list is rejected', async () => {
-    const before = (await getGames('MMC')).length;
-    await expect(
-      createGame({
-        sport: 'tennis',
-        locationId: 'made-up',
-        startsAt: new Date(Date.now() + 3_600_000).toISOString(),
-        durationMinutes: 60,
-        maxPlayers: 4,
-        skillLevel: 'beginner',
-        notes: '',
-      }),
-    ).rejects.toThrow('Unknown location');
-    expect(await getGames('MMC')).toHaveLength(before);
+  test('passes on what the database rejected', async () => {
+    fails('Start time must be in the future');
+    await expect(createGame(input)).rejects.toThrow('Start time must be in the future');
+  });
+
+  test('throws when no id comes back', async () => {
+    answers(null);
+    await expect(createGame(input)).rejects.toThrow('Unexpected answer');
+  });
+});
+
+describe('no write counts spots in the app', () => {
+  test('joining, leaving and creating leave the local games untouched', async () => {
+    const before = JSON.stringify(mockGames());
+    answers('joined');
+    await joinGame('full');
+    answers(null);
+    await leaveGame('2');
+    answers('new-game-id');
+    await createGame({ sport: 'tennis', locationId: 'loc-bbc', startsAt: '2026-12-01T23:00:00.000Z', durationMinutes: 60, maxPlayers: 4, skillLevel: 'beginner', notes: '' });
+    expect(JSON.stringify(mockGames())).toBe(before);
   });
 });
 
@@ -124,22 +152,11 @@ describe('getLocations', () => {
 });
 
 describe('hostGamesCount', () => {
-  test("counts the host's games but not cancelled ones, and grows when they post", async () => {
+  test("counts the host's games but not cancelled ones", async () => {
     const all = mockGames();
     const alex = all[0].host.id;
     const notCancelled = all.filter((g) => g.host.id === alex && g.status !== 'cancelled').length;
     expect(all.some((g) => g.host.id === alex && g.status === 'cancelled')).toBe(true); // so the exclusion is really tested
     expect((await getGame('1'))?.hostGamesCount).toBe(notCancelled);
-
-    const first = await createGame({
-      sport: 'tennis',
-      locationId: 'loc-bbc',
-      startsAt: new Date(Date.now() + 3_600_000).toISOString(),
-      durationMinutes: 60,
-      maxPlayers: 4,
-      skillLevel: 'beginner',
-      notes: '',
-    });
-    expect(first.hostGamesCount).toBe(1);
   });
 });

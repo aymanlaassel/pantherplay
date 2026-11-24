@@ -1,15 +1,12 @@
-// Every screen gets games from here. These return mock data and are replaced by Supabase calls in W3-08.
+// Every screen gets games from here. Join, Leave and Create call the database's functions;
+// the reads still return mock data until they are swapped for Supabase calls (W3-08).
 import type { Campus } from '@/components/campus-toggle';
+import { supabase } from '@/lib/supabase';
 import { mockGames } from '@/mock/games';
-import { LOCATIONS } from '@/mock/locations';
-
-import { SPORTS } from './sports';
 import { ME } from '@/mock/people';
 
 import { delay } from './delay';
 import type { Game, GameRecord, JoinResult, NewGame } from './types';
-
-let created = 0;
 
 // Spots filled and my place are counted from the players, not stored.
 function withCounts(record: GameRecord): Game {
@@ -20,12 +17,6 @@ function withCounts(record: GameRecord): Game {
     hostGamesCount: mockGames().filter((g) => g.host.id === record.host.id && g.status !== 'cancelled').length,
     myStatus: mine === 'joined' || mine === 'waitlisted' ? mine : null,
   };
-}
-
-function find(id: string): GameRecord {
-  const record = mockGames().find((g) => g.id === id);
-  if (!record) throw new Error('Game not found');
-  return record;
 }
 
 // Games on a campus, soonest first. Cancelled games are not listed.
@@ -44,45 +35,33 @@ export async function getGame(id: string): Promise<Game | null> {
   return record ? withCounts(record) : null;
 }
 
-// Imitates the join_game RPC: the database, not the app, decides Joined or Waitlisted.
+// The database decides Joined or Waitlisted: join_game locks the game and counts its spots.
 export async function joinGame(id: string): Promise<JoinResult> {
-  await delay();
-  const record = find(id);
-  if (record.status === 'cancelled') throw new Error('Game is cancelled');
-  const mine = record.players.find((p) => p.profile.id === ME.id);
-  if (mine?.status === 'joined' || mine?.status === 'waitlisted') return mine.status;
-  const full = withCounts(record).spotsFilled >= record.maxPlayers;
-  const status = full ? 'waitlisted' : 'joined';
-  if (mine) Object.assign(mine, { status, joinedAt: new Date().toISOString() });
-  else record.players.push({ profile: ME, status, joinedAt: new Date().toISOString() });
-  return status;
+  const { data, error } = await supabase.rpc('join_game', { p_game_id: id });
+  if (error) throw new Error(error.message);
+  if (data !== 'joined' && data !== 'waitlisted') throw new Error('Unexpected answer from join_game');
+  return data;
 }
 
+// If you had a spot, leave_game gives it to the first waitlisted player.
 export async function leaveGame(id: string): Promise<void> {
-  await delay();
-  const mine = find(id).players.find((p) => p.profile.id === ME.id);
-  if (mine) mine.status = 'left';
+  const { error } = await supabase.rpc('leave_game', { p_game_id: id });
+  if (error) throw new Error(error.message);
 }
 
-export async function createGame(input: NewGame): Promise<Game> {
-  await delay();
-  // Like the location_id foreign key: only a spot from the fixed list is accepted.
-  const location = LOCATIONS.find((l) => l.id === input.locationId);
-  if (!location) throw new Error('Unknown location');
-  const sport = SPORTS.find((s) => s.code === input.sport);
-  if (!sport) throw new Error('Unknown sport');
-  created += 1;
-  const { locationId, ...rest } = input;
-  const record: GameRecord = {
-    ...rest,
-    id: `new-${created}`,
-    host: ME,
-    sport,
-    location,
-    notes: rest.notes || null,
-    status: 'open',
-    players: [{ profile: ME, status: 'joined', joinedAt: new Date().toISOString() }],
-  };
-  mockGames().push(record);
-  return withCounts(record);
+// Posts the game with you as host and first player, and returns its id.
+// The database checks the time, duration, location and sport, so errors come back from there.
+export async function createGame(input: NewGame): Promise<string> {
+  const { data, error } = await supabase.rpc('create_game', {
+    p_sport: input.sport,
+    p_location_id: input.locationId,
+    p_starts_at: input.startsAt,
+    p_duration_minutes: input.durationMinutes,
+    p_max_players: input.maxPlayers,
+    p_skill_level: input.skillLevel,
+    p_notes: input.notes,
+  });
+  if (error) throw new Error(error.message);
+  if (typeof data !== 'string') throw new Error('Unexpected answer from create_game');
+  return data;
 }

@@ -1,7 +1,7 @@
 import { act, render, screen } from '@testing-library/react-native';
 
-import { createGame } from '@/api/games';
 import DiscoverScreen from '@/app/(tabs)/index';
+import { mockGames } from '@/mock/games';
 
 type Effect = () => void | (() => void);
 const mockEffects: Effect[] = [];
@@ -18,15 +18,9 @@ jest.mock('react-native-safe-area-context', () => require('react-native-safe-are
 
 test('a game posted while Discover is in the background shows when the tab is focused again', async () => {
   await render(<DiscoverScreen />);
-  await createGame({
-    sport: 'tennis',
-    locationId: 'loc-rec',
-    startsAt: new Date(Date.now() + 3_600_000).toISOString(),
-    durationMinutes: 60,
-    maxPlayers: 4,
-    skillLevel: 'beginner',
-    notes: '',
-  });
+  // Someone posts a tennis game on this campus while the tab is in the background.
+  const [first] = mockGames();
+  mockGames().push({ ...first, id: 'posted-later', sport: { code: 'tennis', name: 'Tennis' } });
   expect(screen.queryByText('Tennis')).toBeNull();
 
   await act(async () => {
