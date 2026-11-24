@@ -339,6 +339,15 @@ erDiagram
 | **REPORTS** | Reports of bad behavior or fake games for the team to review. Required by the App Store. |
 | **PUSH_TOKENS** | Each phone's address for push notifications. One student can have several phones. |
 
+**The only way to add games and players:** `GAMES` and `GAME_PLAYERS` have no insert policy, so the app can't add rows itself. It calls these database functions (RPCs) instead. Each one uses the signed-in user (`auth.uid()`), never a user id sent by the app. Migration: `supabase/migrations/*_game_rpcs.sql`; tests: `supabase/tests/game_rpcs.test.sql`.
+
+| Function | Takes | Returns | What it does |
+|---|---|---|---|
+| **`create_game`** | sport, location id, start time, duration (60/90/120), max players, skill level, notes | the new game's id | Posts the game and adds the host as `joined`, in one step. Rejects a start time in the past. Empty notes become null. |
+| **`join_game`** | game id | `joined` or `waitlisted` | Locks the game, counts `joined` players, then joins or waitlists you (see section 6). Joining twice returns your current place. Someone who left rejoins at the back of the line. Rejects cancelled and already-started games. |
+| **`leave_game`** | game id | nothing | Marks you `left`. If you had a spot, the earliest waitlisted player gets it. |
+| **`cancel_game`** | game id | nothing | Host only: sets the game to `cancelled`. Anyone else gets an error. |
+
 ---
 
 ## 6. Joining a game, step by step
