@@ -1,53 +1,45 @@
 // The Profile tab's sections. Takes the user as a prop so tests can pass hostile data.
+// Username, win/loss record and reliability are hidden until the database has them (open decisions).
 import { router } from 'expo-router';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
+import type { Game, Profile } from '@/api/types';
 import { BadgeStatus } from '@/components/badge-status';
 import { ButtonOutline } from '@/components/button-outline';
 import { Icon } from '@/components/icon';
 import { InitialsAvatar } from '@/components/initials-avatar';
 import { signOut } from '@/lib/auth';
-import { formatTimeRange } from '@/lib/format-time';
+import { endsAt, formatTimeRange } from '@/lib/format-time';
+import { initials } from '@/lib/initials';
 import { colors, radius, space, typography } from '@/theme';
 
 const ICON_SIZE = 24;
 const ACCENT_WIDTH = 5;
 const ACCENT_RADIUS = 3;
-const STAT_CARD_MIN_HEIGHT = 84;
 const OUTLINE_WIDTH = 2;
 
-export type ProfileUser = {
-  id: string;
-  firstName: string;
-  lastName: string;
-  username: string;
-  avatarUrl: string | null;
-  scheduledGame: {
-    title: string;
-    location: string;
-    startsAt: string;
-    endsAt: string;
-    joined: boolean;
-  };
-  record: { wins: number; losses: number; winRate: string };
-  reliability: { cancellations: number };
+// "Panther Student" -> "Panther". With no name at all it greets "Panther", like Discover.
+const firstName = (fullName: string) => fullName.trim().split(/\s+/)[0] || 'Panther';
+
+// "Today" for today's games, otherwise a short date like "Thu, Nov 27", in the phone's timezone.
+const dayLabel = (iso: string) => {
+  const date = new Date(iso);
+  if (date.toDateString() === new Date().toDateString()) return 'Today';
+  return date.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' });
 };
 
-const firstLetter = (name: string) => Array.from(name.trim())[0]?.toUpperCase() ?? '';
+type ProfileContentProps = {
+  profile: Profile;
+  nextGame: Game | null; // the earliest game I've joined that hasn't ended
+};
 
-// "Maria", "Gonzalez" -> "MG". Empty names can't crash it; with no letters at all it shows "?".
-export const profileInitials = (firstName: string, lastName: string) =>
-  `${firstLetter(firstName)}${firstLetter(lastName)}` || '?';
-
-export function ProfileContent({ user }: { user: ProfileUser }) {
-  const { scheduledGame, record, reliability } = user;
-
+export function ProfileContent({ profile, nextGame }: ProfileContentProps) {
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <View style={styles.header}>
         <View style={styles.headerText}>
           <Text style={styles.greeting} numberOfLines={2}>
-            Greetings {user.firstName}!
+            Greetings {firstName(profile.fullName)}!
           </Text>
           <Text style={styles.tagline}>Your games, your community.</Text>
         </View>
@@ -64,16 +56,13 @@ export function ProfileContent({ user }: { user: ProfileUser }) {
 
       <View style={styles.identity}>
         <InitialsAvatar
-          initials={profileInitials(user.firstName, user.lastName)}
-          imageUrl={user.avatarUrl}
+          initials={initials(profile.fullName) || '?'}
+          imageUrl={profile.avatarUrl}
           size="large"
         />
         <View style={styles.identityText}>
           <Text style={styles.name} numberOfLines={2}>
-            {user.firstName} {user.lastName}
-          </Text>
-          <Text style={styles.name} numberOfLines={1}>
-            @{user.username}
+            {profile.fullName}
           </Text>
           <Pressable accessibilityRole="button" style={styles.editButton}>
             <Text style={styles.editButtonText}>Edit profile ↗</Text>
@@ -82,52 +71,34 @@ export function ProfileContent({ user }: { user: ProfileUser }) {
       </View>
 
       <Text style={styles.sectionTitle}>GAMES SCHEDULED</Text>
-      <View style={styles.gameCard}>
-        <View style={styles.gameAccent} />
-        <View style={styles.gameBody}>
-          <Text style={styles.gameTitle}>{scheduledGame.title}</Text>
-          <View style={styles.detailRow}>
-            <Icon name="pin" color={colors.icon.active} size={ICON_SIZE} />
-            <Text style={styles.detailSmall}>{scheduledGame.location}</Text>
+      {nextGame ? (
+        <View style={styles.gameCard}>
+          <View style={styles.gameAccent} />
+          <View style={styles.gameBody}>
+            <Text style={styles.gameTitle}>{nextGame.sport.name}</Text>
+            <View style={styles.detailRow}>
+              <Icon name="pin" color={colors.icon.active} size={ICON_SIZE} />
+              <Text style={styles.detailSmall}>{`${nextGame.location.name} · ${nextGame.location.campus}`}</Text>
+            </View>
+            <View style={styles.detailRow}>
+              <Icon name="calendar" color={colors.icon.active} size={ICON_SIZE} />
+              <Text style={styles.detail}>
+                {`${dayLabel(nextGame.startsAt)}, ${formatTimeRange(
+                  nextGame.startsAt,
+                  endsAt(nextGame.startsAt, nextGame.durationMinutes),
+                )}`}
+              </Text>
+            </View>
+            <BadgeStatus status="joined" style={styles.joinedBadge} />
           </View>
-          <View style={styles.detailRow}>
-            <Icon name="calendar" color={colors.icon.active} size={ICON_SIZE} />
-            <Text style={styles.detail}>
-              {`Today, ${formatTimeRange(scheduledGame.startsAt, scheduledGame.endsAt)}`}
-            </Text>
-          </View>
-          {scheduledGame.joined && <BadgeStatus status="joined" style={styles.joinedBadge} />}
         </View>
-      </View>
-
-      <Text style={styles.sectionTitle}>WIN / LOSS RECORD</Text>
-      <View style={[styles.statCard, styles.recordCard]}>
-        <Stat value={record.wins} label="Wins" />
-        <Stat value={record.losses} label="Losses" />
-        <Stat value={record.winRate} label="Win rate" />
-      </View>
-
-      <Text style={styles.sectionTitle}>RELIABILITY</Text>
-      <View style={[styles.statCard, styles.reliabilityCard]}>
-        <Text style={styles.statValue}>{reliability.cancellations}</Text>
-        <View style={styles.reliabilityText}>
-          <Text style={styles.reliabilityTitle}>Cancellations</Text>
-          <Text style={styles.statLabel}>Games canceled after scheduling or joining</Text>
-        </View>
-      </View>
+      ) : (
+        <Text style={styles.noGames}>No games scheduled. Join one from Discover.</Text>
+      )}
 
       {/* TEMPORARY: lets us test the auth gate until Settings has a real Sign out. Remove then. */}
       <ButtonOutline label="Sign out" onPress={signOut} style={styles.signOut} />
     </ScrollView>
-  );
-}
-
-function Stat({ value, label }: { value: number | string; label: string }) {
-  return (
-    <View style={styles.stat}>
-      <Text style={styles.statValue}>{value}</Text>
-      <Text style={styles.statLabel}>{label}</Text>
-    </View>
   );
 }
 
@@ -238,41 +209,8 @@ const styles = StyleSheet.create({
   joinedBadge: {
     alignSelf: 'flex-end',
   },
-  statCard: {
-    minHeight: STAT_CARD_MIN_HEIGHT,
-    borderRadius: radius.card,
-    borderWidth: OUTLINE_WIDTH,
-    borderColor: colors.border.default,
-    backgroundColor: colors.bg.surface,
-    paddingHorizontal: space[20],
-    alignItems: 'center',
-  },
-  recordCard: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  stat: {
-    alignItems: 'center',
-    gap: space[4],
-  },
-  statValue: {
-    ...typography.Price,
-    color: colors.text.primary,
-  },
-  statLabel: {
-    ...typography.Caption,
+  noGames: {
+    ...typography['Body/Regular'],
     color: colors.text.muted,
-  },
-  reliabilityCard: {
-    flexDirection: 'row',
-    gap: space[20],
-  },
-  reliabilityText: {
-    flex: 1,
-    gap: space[4],
-  },
-  reliabilityTitle: {
-    ...typography.Button,
-    color: colors.text.primary,
   },
 });
