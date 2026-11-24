@@ -66,7 +66,7 @@ flowchart LR
 |---|---|
 | **PantherPlay app** | Everything the student sees and taps. It shows screens, sends what the student does (join, post, leave) to Supabase, and redraws when data changes. It does **not** decide rules like "is this game full?". |
 | **Auth** | Knowing who is signed in. After sign-in it gives the app a token (a digital ID card) that's attached to every request, so the database knows who is asking. |
-| **Google sign-in** | Proving the person owns their Google account. Used until FIU login is ready. |
+| **Google sign-in** | Proving the person owns their Google account. Used until FIU login is ready. Setup: [google-sign-in-setup.md](./google-sign-in-setup.md). |
 | **FIU official login** | Replacing Google later. PantherSoft builds this; we don't. |
 | **Postgres database** | Storing everything that must survive closing the app: profiles, games, who joined. It also **enforces the rules**: Row Level Security (RLS) decides who may read or change each row, and functions like `join_game` stop overbooking. |
 | **Realtime** | Watching the database and pushing changes to every phone with that screen open, so spot counts update without a refresh. |
