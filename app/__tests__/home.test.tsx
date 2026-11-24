@@ -99,3 +99,11 @@ test('the search box and filter button are labelled for screen readers', async (
   expect(screen.getByLabelText('Search games')).toBeTruthy();
   expect(screen.getByLabelText('Filters')).toBeTruthy();
 });
+
+test("a full game's card says Join waitlist, like its page", async () => {
+  resetMockGames(); // the full set, which has a full game
+  resetMockGames(mockGames().filter((game) => game.id === 'full'));
+  await render(<DiscoverScreen />);
+  expect(screen.getByText('Join waitlist')).toBeTruthy();
+  expect(screen.queryByText('Join game')).toBeNull();
+});
