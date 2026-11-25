@@ -241,7 +241,7 @@ This check lives in the root layout, `app/src/app/_layout.tsx`, which every scre
 
 ```mermaid
 erDiagram
-  PROFILES ||--o{ GAMES : "hosts"
+  PROFILES |o--o{ GAMES : "hosts"
   PROFILES ||--o{ GAME_PLAYERS : "joins as"
   GAMES ||--o{ GAME_PLAYERS : "has"
   LOCATIONS ||--o{ GAMES : "is played at"
@@ -263,7 +263,7 @@ erDiagram
   }
   GAMES {
     uuid id PK
-    uuid host_id FK
+    uuid host_id FK "empty if the host deleted their account"
     text sport FK
     uuid location_id FK
     timestamptz starts_at "always with timezone"
@@ -328,7 +328,7 @@ erDiagram
 
 | Table | In charge of |
 |---|---|
-| **PROFILES** | One row per student: name, photo, home campus. Its `id` is the same as their sign-in id, which links the login to the profile. |
+| **PROFILES** | One row per student: name, photo, home campus. Its `id` is the same as their sign-in id, which links the login to the profile. A database trigger creates it at sign-up. |
 | **GAMES** | One row per posted game: who hosts, sport, place, start time, length, player limits and status. |
 | **GAME_PLAYERS** | Who is in which game: one row per person per game, with their status (joined, waitlisted, left). Counting the `joined` rows gives the spots filled. |
 | **LOCATIONS** | The fixed list of campus spots (Panther Field, Rec Center…), their photos and their coordinates. Games pick one instead of typing an address; the Map tab uses the coordinates to drop a pin per game (see [ADR 0004](./adr/0004-map-tab.md)). |
