@@ -28,7 +28,7 @@ Fill these in once the Expo app is scaffolded:
 
 ## Checks
 Run from `app/` before every PR; all must pass.
-CI (`.github/workflows/ci.yml`) also runs lint, typecheck and tests on every PR. The smoke test is local only.
+CI (`.github/workflows/ci.yml`) also runs lint, typecheck, tests and the SQL tests (`supabase test db`) on every PR. The smoke test is local only.
 
 | Check | Command |
 |---|---|

@@ -436,7 +436,7 @@ The database functions (`join_game`, `leave_game`, `cancel_game`) change the sta
 flowchart LR
   A["💻 Your laptop<br/>git checkout -b feat/join-button"] --> B["Push branch"]
   B --> C["Open Pull Request"]
-  C --> D{"CI checks<br/>lint · typecheck · tests"}
+  C --> D{"CI checks<br/>lint · typecheck · tests<br/>SQL tests"}
   D -- fail --> A
   D -- pass --> E{"1 teammate reviews<br/>(within 24h)"}
   E -- changes requested --> A
@@ -454,7 +454,7 @@ flowchart LR
 |---|---|
 | **Your laptop / branch** | Your own copy of the code. A branch is a separate line of work, so you can't break `main` while you build. |
 | **Pull Request (PR)** | Asking to merge your branch into `main`. It's where teammates see your changes and comment. |
-| **CI checks** | Automatic checks on every PR: lint (style mistakes), typecheck (TypeScript errors) and tests. Set up in `.github/workflows/ci.yml`. |
+| **CI checks** | Automatic checks on every PR: lint (style mistakes), typecheck (TypeScript errors), tests, and the SQL tests in `supabase/tests/` run against a fresh local database. Set up in `.github/workflows/ci.yml`. |
 | **Review** | One teammate reads your code within 24 hours and approves it or asks for changes. |
 | **Merge to main** | Adding your change to `main`, the shared working version that everyone branches from. |
 | **EAS Build** | Expo's cloud service that turns the code into real iPhone and Android apps. |
