@@ -1,4 +1,4 @@
-import { createGame, getGame, getGames, joinGame, leaveGame } from '@/api/games';
+import { cancelGame, createGame, getGame, getGames, joinGame, leaveGame } from '@/api/games';
 import { getLocations } from '@/api/locations';
 import type { GameRow, LocationRow, ProfileRow } from '@/api/rows';
 import type { NewGame } from '@/api/types';
@@ -202,6 +202,32 @@ describe('leaveGame', () => {
   test('passes on a database error', async () => {
     fails('Game not found');
     await expect(leaveGame('nope')).rejects.toThrow('Game not found');
+  });
+});
+
+describe('cancelGame', () => {
+  test('asks cancel_game', async () => {
+    answers(null);
+    await cancelGame('g1');
+    expect(rpc).toHaveBeenCalledWith('cancel_game', { p_game_id: 'g1' });
+  });
+
+  test('passes on what the database rejected, like a player who is not the host', async () => {
+    fails('Only the host can cancel this game');
+    await expect(cancelGame('g1')).rejects.toThrow('Only the host can cancel this game');
+  });
+});
+
+describe('isHost', () => {
+  test('is true only for the game I host, and false when nobody is signed in', async () => {
+    queue({ data: [gameRow('g1'), gameRow('g2', { host: profile('me', 'Panther Student') })], error: null });
+    queue({ data: [], error: null });
+    expect((await getGames('MMC')).map((g) => g.isHost)).toEqual([false, true]);
+
+    jest.mocked(getUserId).mockResolvedValueOnce(null);
+    queue({ data: gameRow('g2', { host: profile('me', 'Panther Student') }), error: null });
+    queue({ data: [], error: null });
+    expect((await getGame('g2'))?.isHost).toBe(false);
   });
 });
 
