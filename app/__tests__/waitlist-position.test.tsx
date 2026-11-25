@@ -2,7 +2,7 @@ import { useLocalSearchParams } from 'expo-router';
 import { fireEvent, render, screen } from '@testing-library/react-native';
 
 import { myPlace } from '@/api/my-place';
-import type { Player } from '@/api/types';
+import type { GameRecord, Player } from '@/api/types';
 import GameDetailScreen from '@/app/game/[id]';
 import { ordinal } from '@/lib/ordinal';
 import { mockGames, resetMockGames } from '@/mock/games';
@@ -22,6 +22,8 @@ const waiting = (id: string, minute: number): Player => ({
   joinedAt: `2026-11-25T12:${String(minute).padStart(2, '0')}:00.000Z`,
 });
 
+const record = (players: Player[]): GameRecord => ({ ...mockGames()[0], players });
+
 const open = async (id: string) => {
   (useLocalSearchParams as jest.Mock).mockReturnValue({ id });
   await render(<GameDetailScreen />);
@@ -38,14 +40,14 @@ test('ordinal wording for 1st, 2nd, 3rd, 11th and beyond', () => {
 describe('myPlace', () => {
   test('counts my place in line by when each waitlisted player joined, not list order', () => {
     const players = [waiting('p2', 5), waiting(ME.id, 9), waiting('p1', 1), { ...waiting('p3', 0), status: 'left' as const }];
-    expect(myPlace(players, ME.id)).toEqual({ myStatus: 'waitlisted', waitlistPosition: 3 });
+    expect(myPlace(record(players), ME.id)).toMatchObject({ myStatus: 'waitlisted', waitlistPosition: 3 });
   });
 
   test('joined players, outsiders and signed-out users have no position', () => {
     const players: Player[] = [{ ...waiting(ME.id, 0), status: 'joined' }, waiting('p1', 1)];
-    expect(myPlace(players, ME.id)).toEqual({ myStatus: 'joined', waitlistPosition: null });
-    expect(myPlace([waiting('p1', 1)], ME.id)).toEqual({ myStatus: null, waitlistPosition: null });
-    expect(myPlace([waiting('p1', 1)], null)).toEqual({ myStatus: null, waitlistPosition: null });
+    expect(myPlace(record(players), ME.id)).toMatchObject({ myStatus: 'joined', waitlistPosition: null });
+    expect(myPlace(record([waiting('p1', 1)]), ME.id)).toMatchObject({ myStatus: null, waitlistPosition: null });
+    expect(myPlace(record([waiting('p1', 1)]), null)).toMatchObject({ myStatus: null, waitlistPosition: null });
   });
 });
 

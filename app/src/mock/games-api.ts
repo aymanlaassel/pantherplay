@@ -17,7 +17,7 @@ function withCounts(record: GameRecord): Game {
     ...record,
     spotsFilled: record.players.filter((p) => p.status === 'joined').length,
     hostGamesCount: mockGames().filter((g) => g.host.id === record.host.id && g.status !== 'cancelled').length,
-    ...myPlace(record.players, ME.id),
+    ...myPlace(record, ME.id),
   };
 }
 
@@ -58,6 +58,14 @@ export async function leaveGame(id: string): Promise<void> {
   await delay();
   const mine = find(id).players.find((p) => p.profile.id === ME.id);
   if (mine) mine.status = 'left';
+}
+
+// Plays the part of cancel_game: only the host may cancel.
+export async function cancelGame(id: string): Promise<void> {
+  await delay();
+  const record = find(id);
+  if (record.host.id !== ME.id) throw new Error('Only the host can cancel this game');
+  record.status = 'cancelled';
 }
 
 export async function createGame(input: NewGame): Promise<string> {

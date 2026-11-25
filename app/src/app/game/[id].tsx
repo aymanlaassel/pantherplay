@@ -1,4 +1,5 @@
 import { router, useLocalSearchParams } from 'expo-router';
+import { useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -8,6 +9,7 @@ import { ActionBar } from '@/features/game-detail/action-bar';
 import { CancellationCard } from '@/features/game-detail/cancellation-card';
 import { DetailMessage } from '@/features/game-detail/detail-message';
 import { DetailRows } from '@/features/game-detail/detail-rows';
+import { HostOptions } from '@/features/game-detail/host-options';
 import { HostNotes } from '@/features/game-detail/host-notes';
 import { HostRow } from '@/features/game-detail/host-row';
 import { PhotoHeader } from '@/features/game-detail/photo-header';
@@ -27,7 +29,8 @@ export default function GameDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const insets = useSafeAreaInsets();
   const { game, status, retry, refresh } = useGame(id);
-  const { busy, failed, answer, join, leave } = useGameActions(id, refresh);
+  const { busy, failed, answer, join, leave, cancel } = useGameActions(id, refresh);
+  const [hostOptionsOpen, setHostOptionsOpen] = useState(false);
 
   if (status === 'loading') return <DetailMessage onBack={goBack} />;
   if (status === 'error') return <DetailMessage message="Couldn't load this game." onBack={goBack} onRetry={retry} />;
@@ -35,11 +38,12 @@ export default function GameDetailScreen() {
 
   const state = gameState(game);
   const joined = game.players.filter((p) => p.status === 'joined');
+  const canCancel = game.isHost && state !== 'cancelled';
 
   return (
     <View style={styles.screen}>
       <ScrollView contentContainerStyle={[styles.content, { paddingTop: insets.top + space[16] }]}>
-        <PhotoHeader onBack={goBack} />
+        <PhotoHeader onBack={goBack} onHostOptions={canCancel ? () => setHostOptionsOpen(true) : undefined} />
         <View style={styles.titleRow}>
           <Text style={styles.title}>{game.sport.name}</Text>
           {state === 'open' ? null : <BadgeStatus status={state} />}
@@ -54,6 +58,7 @@ export default function GameDetailScreen() {
         <CancellationCard rule={CANCELLATION_RULE} />
       </ScrollView>
       <ActionBar game={game} answer={answer} busy={busy} failed={failed} onJoin={join} onLeave={leave} />
+      <HostOptions visible={hostOptionsOpen && canCancel} onCancelGame={cancel} onClose={() => setHostOptionsOpen(false)} />
     </View>
   );
 }

@@ -1,7 +1,7 @@
-// Join and Leave for one game, with the answer to show and whether the last try failed.
+// Join, Leave and the host's Cancel for one game, with the answer to show and whether the last try failed.
 import { useState } from 'react';
 
-import { joinGame, leaveGame } from '@/api/games';
+import { cancelGame, joinGame, leaveGame } from '@/api/games';
 import type { JoinResult } from '@/api/types';
 
 export function useGameActions(id: string, onDone: () => Promise<void>) {
@@ -29,5 +29,7 @@ export function useGameActions(id: string, onDone: () => Promise<void>) {
       setAnswer(null);
     });
 
-  return { busy, failed, answer, join, leave };
+  const cancel = () => run(() => cancelGame(id));
+
+  return { busy, failed, answer, join, leave, cancel };
 }

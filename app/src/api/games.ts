@@ -17,7 +17,7 @@ function withCounts(record: GameRecord, me: string | null, hostGames: Map<string
     ...record,
     spotsFilled: record.players.filter((p) => p.status === 'joined').length,
     hostGamesCount: hostGames.get(record.host.id) ?? 0,
-    ...myPlace(record.players, me),
+    ...myPlace(record, me),
   };
 }
 
@@ -70,6 +70,12 @@ export async function joinGame(id: string): Promise<JoinResult> {
 // If you had a spot, leave_game gives it to the first waitlisted player.
 export async function leaveGame(id: string): Promise<void> {
   const { error } = await supabase.rpc('leave_game', { p_game_id: id });
+  if (error) throw new Error(error.message);
+}
+
+// Only the host may cancel; cancel_game checks that, so a player's call comes back as an error.
+export async function cancelGame(id: string): Promise<void> {
+  const { error } = await supabase.rpc('cancel_game', { p_game_id: id });
   if (error) throw new Error(error.message);
 }
 
