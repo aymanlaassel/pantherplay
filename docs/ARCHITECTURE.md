@@ -172,6 +172,7 @@ flowchart TD
   Profile -- "gear icon" --> Settings["Settings"]
   Settings -- "Delete account" --> DeleteAccount["Delete account<br/>type DELETE to enable placeholder action"]
   DeleteAccount -- "Cancel / placeholder Delete" --> Settings
+  Settings -- "Blocked players" --> Blocked["Blocked players<br/>list and Unblock"]
   Settings -. "later ticket; row is inert" .-> NotifPrefs["Notification preferences<br/>(not implemented)"]
   Notifications -- "tap a notification" --> Detail
   MyGames["My Games<br/>(pending — no tab slot yet)"] -.-> Detail
@@ -196,7 +197,8 @@ flowchart TD
 | **Game detail** | One game: when, where, who's going, spots left, and the Join button. It opens on top of the tabs with a back button. The game comes from `getGame(id)`; spots filled are counted from its players, and "Hosted N games" under the host is counted from the host's games (cancelled ones don't count). Join calls `joinGame(id)` and shows Joined or Waitlisted; once you're in, the button becomes Leave (`leaveGame(id)`). A cancelled game can't be joined. Has loading and error states with Try again. The game and Join and Leave all go to the database. |
 | **Notifications** | Your list of updates (game cancelled, spot opened). Opened from the bell on Home. |
 | **Create game** | The full-screen form to host a game. Duration is 1, 1.5 or 2 hours, and the place is picked from the campus's fixed spots (`getLocations(campus)`). Posting it opens the new game's detail page. |
-| **Settings** | Opened from the gear on Profile. A mock profile, Account, Preferences, Privacy & Safety, Support, a placeholder Sign out, and Delete account. Terms & Privacy Policy opens a placeholder browser URL. Unfinished rows do nothing. |
+| **Settings** | Opened from the gear on Profile. A mock profile, Account, Preferences, Privacy & Safety, Support, a placeholder Sign out, and Delete account. Blocked players shows how many players you blocked and opens their list. Terms & Privacy Policy opens a placeholder browser URL. Unfinished rows do nothing. |
+| **Blocked players** | The players you blocked, each with Unblock, and "You haven't blocked anyone" when there are none. Loads through `getBlockedUsers()` and `unblockUser(id)` in `src/api/safety.ts`, mock data until the blocks table lands (W7-01). Blocking itself happens from the Report sheet. |
 | **Delete account** | Warning and deleted-data list, exact DELETE confirmation, and Cancel. The enabled Delete action only goes back; no data is deleted. |
 | **Notification preferences** | Designed, but implementation is a later ticket. Settings does not navigate here yet. |
 | **My Games** | Games you've joined or host. Pending: it has no tab slot yet. |
