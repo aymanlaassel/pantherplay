@@ -6,6 +6,7 @@ import type { Game, JoinResult } from '@/api/types';
 import { ButtonJoin } from '@/components/button-join';
 import { ButtonOutline } from '@/components/button-outline';
 import { gameState, type GameState } from '@/lib/game-state';
+import { ordinal } from '@/lib/ordinal';
 import { colors, space, typography } from '@/theme';
 
 export const ACTION_LABEL: Record<GameState, string> = {
@@ -37,6 +38,7 @@ export function ActionBar({ game, answer, busy, failed, onJoin, onLeave }: Actio
   // The answer from tapping Join. After a reload, Waitlisted still shows: unlike Joined, it has no badge.
   const saved = game.myStatus === 'waitlisted' ? 'waitlisted' : null;
   const place = cancelled ? null : (answer ?? saved);
+  const position = place === 'waitlisted' ? game.waitlistPosition : null;
 
   return (
     <View style={[styles.bar, { paddingBottom: insets.bottom + space[12] }]}>
@@ -51,6 +53,7 @@ export function ActionBar({ game, answer, busy, failed, onJoin, onLeave }: Actio
       ) : (
         <ButtonJoin label={label} disabled={busy} onPress={onJoin} />
       )}
+      {position ? <Text style={styles.position}>{`${ordinal(position)} on the waitlist`}</Text> : null}
     </View>
   );
 }
@@ -65,4 +68,5 @@ const styles = StyleSheet.create({
   },
   note: { ...typography['Body/Strong'], color: colors.text.success, textAlign: 'center' },
   error: { color: colors.text.error },
+  position: { ...typography['Body/Regular'], color: colors.text.muted, textAlign: 'center' },
 });

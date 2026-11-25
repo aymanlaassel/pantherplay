@@ -36,6 +36,7 @@ const gameAt = (id: string, hours: number, over: Partial<Game> = {}): Game => ({
   spotsFilled: 7,
   hostGamesCount: 1,
   myStatus: 'joined',
+  waitlistPosition: null,
   ...over,
 });
 

@@ -11,7 +11,7 @@ const ALMOST_FULL_SPOTS = 3;
 export function gameState(game: Game, now: Date = new Date()): GameState {
   if (game.status === 'cancelled') return 'cancelled';
   if (game.myStatus === 'joined') return 'joined';
-  if (game.myStatus === 'waitlisted') return 'open'; // no waitlist badge until Felipe decides
+  if (game.myStatus === 'waitlisted') return 'open'; // no waitlist badge: Felipe decided on Nov 25 to show the position only
   const spotsLeft = game.maxPlayers - game.spotsFilled;
   if (spotsLeft <= 0) return 'full';
   const untilStart = new Date(game.startsAt).getTime() - now.getTime();
