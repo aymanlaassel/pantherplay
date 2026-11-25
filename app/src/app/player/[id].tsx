@@ -1,6 +1,7 @@
 // Player profile: another player's photo or initials, name, home campus and games played.
-// Opened from Game detail's host and players rows.
+// Opened from Game detail's host and players rows. More opens Report and Block.
 import { router, useLocalSearchParams } from 'expo-router';
+import { useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -8,6 +9,7 @@ import { ButtonOutline } from '@/components/button-outline';
 import { Icon } from '@/components/icon';
 import { InitialsAvatar } from '@/components/initials-avatar';
 import { usePlayer } from '@/features/player/use-player';
+import { ReportSheet } from '@/features/safety/report-sheet';
 import { initials } from '@/lib/initials';
 import { colors, radius, space, typography } from '@/theme';
 
@@ -18,6 +20,7 @@ export default function PlayerProfileScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const insets = useSafeAreaInsets();
   const { data, status, retry } = usePlayer(id);
+  const [moreOpen, setMoreOpen] = useState(false);
 
   return (
     <ScrollView style={styles.screen} contentContainerStyle={[styles.content, { paddingTop: insets.top + space[16], paddingBottom: insets.bottom + space[20] }]}>
@@ -25,6 +28,11 @@ export default function PlayerProfileScreen() {
         <Pressable onPress={goBack} accessibilityRole="button" accessibilityLabel="Back" style={styles.iconButton}>
           <Icon name="chevronLeft" color={colors.icon.active} size={24} />
         </Pressable>
+        {data && !data.isMe ? (
+          <Pressable onPress={() => setMoreOpen(true)} accessibilityRole="button" accessibilityLabel="More" style={styles.iconButton}>
+            <Icon name="more" color={colors.icon.active} size={24} />
+          </Pressable>
+        ) : null}
       </View>
       {status === 'loading' ? <ActivityIndicator accessibilityLabel="Loading player" color={colors.icon.active} style={styles.message} /> : null}
       {status === 'error' ? (
@@ -53,6 +61,13 @@ export default function PlayerProfileScreen() {
             <Text style={styles.statLabel}>{data.gamesPlayed === 1 ? 'Game played' : 'Games played'}</Text>
           </View>
           {/* Actions (Add friend, W8-20) go here. */}
+          <ReportSheet
+            visible={moreOpen}
+            reports={[{ type: 'user', id: data.profile.id, label: `Report ${data.profile.fullName}` }]}
+            block={data.profile}
+            onBlocked={goBack}
+            onClose={() => setMoreOpen(false)}
+          />
         </>
       ) : null}
     </ScrollView>
@@ -63,7 +78,7 @@ const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.bg.screen },
   content: { paddingHorizontal: space[20], gap: space[20] },
   topBar: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  iconButton: { minHeight: 44, width: 44, justifyContent: 'center' },
+  iconButton: { minHeight: 44, width: 44, alignItems: 'center', justifyContent: 'center' },
   message: { marginTop: space[20], alignItems: 'center', gap: space[12], textAlign: 'center' },
   body: { ...typography['Body/Regular'], color: colors.text.muted },
   identity: { flexDirection: 'row', alignItems: 'center', gap: space[16] },

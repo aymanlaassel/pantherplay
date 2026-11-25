@@ -1,5 +1,4 @@
-// Figma: Photo button (104:286). The game photo in a split border with back and share buttons,
-// plus Host options when you host the game.
+// Figma: Photo button (104:286). The game photo in a split border with back, More and share buttons.
 import { Image, Pressable, StyleSheet, View } from 'react-native';
 
 import { Icon } from '@/components/icon';
@@ -8,9 +7,9 @@ import { colors, radius, space } from '@/theme';
 
 const BORDER_WIDTH = 3;
 
-type PhotoHeaderProps = { onBack: () => void; onHostOptions?: () => void };
+type PhotoHeaderProps = { onBack: () => void; onMore?: () => void };
 
-export function PhotoHeader({ onBack, onHostOptions }: PhotoHeaderProps) {
+export function PhotoHeader({ onBack, onMore }: PhotoHeaderProps) {
   return (
     <SplitBorder borderWidth={BORDER_WIDTH} borderRadius={radius.card} style={styles.frame}>
       <Image
@@ -21,7 +20,7 @@ export function PhotoHeader({ onBack, onHostOptions }: PhotoHeaderProps) {
       <View style={styles.buttons}>
         <RoundButton icon="chevronLeft" label="Back" onPress={onBack} />
         <View style={styles.right}>
-          {onHostOptions ? <RoundButton icon="gear" label="Host options" onPress={onHostOptions} /> : null}
+          {onMore ? <RoundButton icon="more" label="More" onPress={onMore} /> : null}
           <RoundButton icon="share" label="Share" />
         </View>
       </View>
@@ -29,7 +28,7 @@ export function PhotoHeader({ onBack, onHostOptions }: PhotoHeaderProps) {
   );
 }
 
-type RoundButtonProps = { icon: 'chevronLeft' | 'share' | 'gear'; label: string; onPress?: () => void };
+type RoundButtonProps = { icon: 'chevronLeft' | 'share' | 'more'; label: string; onPress?: () => void };
 
 function RoundButton({ icon, label, onPress }: RoundButtonProps) {
   return (

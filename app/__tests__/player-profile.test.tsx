@@ -12,6 +12,7 @@ jest.mock('expo-router', () => ({
 }));
 jest.mock('@/api/delay', () => ({ delay: () => Promise.resolve() }));
 jest.mock('@/api/games', () => require('@/mock/games-api'));
+jest.mock('@/lib/auth', () => ({ getUserId: jest.fn(async () => 'me') }));
 jest.mock('@/api/profile', () => ({ getPlayer: jest.fn(), getGamesPlayed: jest.fn() }));
 jest.mock('react-native-safe-area-context', () => require('react-native-safe-area-context/jest/mock').default);
 

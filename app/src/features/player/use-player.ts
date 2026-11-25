@@ -3,13 +3,14 @@ import { useEffect, useState } from 'react';
 
 import { getGamesPlayed, getPlayer } from '@/api/profile';
 import type { Profile } from '@/api/types';
+import { getUserId } from '@/lib/auth';
 
-type Loaded = { profile: Profile; gamesPlayed: number } | null;
+type Loaded = { profile: Profile; gamesPlayed: number; isMe: boolean } | null;
 type Result = { key: string; data: Loaded; failed: boolean };
 
 async function load(id: string): Promise<Loaded> {
-  const [profile, gamesPlayed] = await Promise.all([getPlayer(id), getGamesPlayed(id)]);
-  return profile ? { profile, gamesPlayed } : null;
+  const [profile, gamesPlayed, me] = await Promise.all([getPlayer(id), getGamesPlayed(id), getUserId()]);
+  return profile ? { profile, gamesPlayed, isMe: profile.id === me } : null;
 }
 
 export function usePlayer(id: string) {

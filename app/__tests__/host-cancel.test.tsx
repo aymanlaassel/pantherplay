@@ -28,7 +28,7 @@ const hostGame1 = () => {
 // Taps Cancel game in the sheet, then the given button in the confirm alert.
 const cancelAndAnswer = async (answer: 'Cancel game' | 'Keep game') => {
   const alert = jest.spyOn(Alert, 'alert');
-  await fireEvent.press(screen.getByLabelText('Host options'));
+  await fireEvent.press(screen.getByLabelText('More'));
   await fireEvent.press(screen.getByRole('button', { name: 'Cancel game' }));
   expect(alert).toHaveBeenCalledWith('Cancel this game?', expect.any(String), expect.any(Array));
   await act(async () => alert.mock.calls[0][2]!.find((b) => b.text === answer)!.onPress?.());
@@ -38,9 +38,10 @@ const cancelAndAnswer = async (answer: 'Cancel game' | 'Keep game') => {
 beforeEach(() => resetMockGames());
 afterEach(() => jest.restoreAllMocks());
 
-test('a player who is not the host sees no host options', async () => {
+test("a player who is not the host gets Report and Block from More, not Cancel game", async () => {
   await open('1');
-  expect(screen.queryByLabelText('Host options')).toBeNull();
+  await fireEvent.press(screen.getByLabelText('More'));
+  expect(screen.getByRole('button', { name: 'Report game' })).toBeTruthy();
   expect(screen.queryByText('Cancel game')).toBeNull();
 });
 
@@ -52,7 +53,7 @@ test('the host cancels after confirming, and the game shows as cancelled', async
   expect(api.cancelGame).toHaveBeenCalledWith('1');
   expect(await screen.findByRole('button', { name: 'Game cancelled', disabled: true })).toBeTruthy();
   expect(screen.getByText('Cancelled')).toBeTruthy();
-  expect(screen.queryByLabelText('Host options')).toBeNull();
+  expect(screen.queryByLabelText('More')).toBeNull();
 });
 
 test('choosing Keep game leaves the game as it was', async () => {
@@ -68,7 +69,7 @@ test('Close shuts the sheet without asking', async () => {
   hostGame1();
   const alert = jest.spyOn(Alert, 'alert');
   await open('1');
-  await fireEvent.press(screen.getByLabelText('Host options'));
+  await fireEvent.press(screen.getByLabelText('More'));
   await fireEvent.press(screen.getByRole('button', { name: 'Close' }));
   expect(screen.queryByRole('button', { name: 'Cancel game' })).toBeNull();
   expect(alert).not.toHaveBeenCalled();
