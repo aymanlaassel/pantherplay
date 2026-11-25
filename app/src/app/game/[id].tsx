@@ -17,7 +17,6 @@ import { PlayersRow } from '@/features/game-detail/players-row';
 import { useGame } from '@/features/game-detail/use-game';
 import { useGameActions } from '@/features/game-detail/use-game-actions';
 import { gameState } from '@/lib/game-state';
-import { initials } from '@/lib/initials';
 import { colors, space, typography } from '@/theme';
 
 const CANCELLATION_RULE = 'Leaving less than 2 hours before the start counts as a late cancel.';
@@ -53,7 +52,7 @@ export default function GameDetailScreen() {
         <DetailRows game={game} />
         <View style={styles.divider} />
         <SpotsBar filled={game.spotsFilled} max={game.maxPlayers} />
-        <PlayersRow players={joined.slice(0, 5).map((p) => initials(p.profile.fullName))} filled={game.spotsFilled} />
+        <PlayersRow players={joined.slice(0, 5).map((p) => p.profile)} filled={game.spotsFilled} />
         {game.notes ? <HostNotes notes={game.notes} /> : null}
         <CancellationCard rule={CANCELLATION_RULE} />
       </ScrollView>

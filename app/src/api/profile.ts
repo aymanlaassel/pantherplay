@@ -2,10 +2,16 @@
 // For now the time is saved on the phone, so reopening the app still skips onboarding.
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
+import { endsAt } from '@/lib/format-time';
+import { supabase } from '@/lib/supabase';
 import { ME } from '@/mock/people';
 
 import { delay } from './delay';
+import { PROFILE_COLUMNS, toProfile, type ProfileRow } from './rows';
 import type { Profile } from './types';
+
+// Postgres's code for text that isn't a valid id, like a mistyped link.
+const INVALID_ID = '22P02';
 
 const ONBOARDING_KEY = 'mock:onboarding_completed_at';
 
@@ -24,4 +30,28 @@ export async function hasFinishedOnboarding(): Promise<boolean> {
 export async function getProfile(): Promise<Profile> {
   await delay();
   return ME;
+}
+
+// Another player's profile, from Supabase. null if nobody has this id (or their account was deleted).
+export async function getPlayer(id: string): Promise<Profile | null> {
+  const { data, error } = await supabase.from('profiles').select(PROFILE_COLUMNS).eq('id', id).maybeSingle();
+  if (error?.code === INVALID_ID) return null;
+  if (error) throw new Error(error.message);
+  return data ? toProfile(data as ProfileRow) : null;
+}
+
+type PlayedRow = { game: { starts_at: string; duration_minutes: number } };
+
+// How many games this player was in (joined, not waitlisted) that have ended. Cancelled games don't count.
+export async function getGamesPlayed(userId: string, now: Date = new Date()): Promise<number> {
+  const { data, error } = await supabase
+    .from('game_players')
+    .select('game:games!inner (starts_at, duration_minutes)')
+    .eq('user_id', userId)
+    .eq('status', 'joined')
+    .neq('game.status', 'cancelled')
+    .lt('game.starts_at', now.toISOString());
+  if (error) throw new Error(error.message);
+  // The database can only filter by start, so drop games still being played.
+  return (data as unknown as PlayedRow[]).filter(({ game }) => new Date(endsAt(game.starts_at, game.duration_minutes)) <= now).length;
 }

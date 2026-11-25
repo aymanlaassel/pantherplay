@@ -100,7 +100,7 @@ flowchart TB
   Screens --> AuthScreens["(auth)/<br/>welcome, sign-in"]
   Screens --> Onb["(onboarding)/<br/>campus, sports, photo, notifications"]
   Screens --> Tabs["(tabs)/<br/>discover, profile, …"]
-  Screens --> Pushed["game/[id] · game/create · notifications · settings"]
+  Screens --> Pushed["game/[id] · game/create · player/[id] · notifications · settings"]
 
   Lib --> AuthTs["auth.ts ⚠️<br/>the ONLY file that knows<br/>about Google sign-in"]
   Lib --> Client["supabase.ts<br/>database client"]
@@ -175,6 +175,7 @@ flowchart TD
   Settings -- "Blocked players" --> Blocked["Blocked players<br/>list and Unblock"]
   Settings -. "later ticket; row is inert" .-> NotifPrefs["Notification preferences<br/>(not implemented)"]
   Notifications -- "tap a notification" --> Detail
+  Detail -- "tap the host or a player" --> Player["Player profile"]
   MyGames["My Games<br/>(pending — no tab slot yet)"] -.-> Detail
 
   classDef pending stroke-dasharray: 5 5,color:#5A6B7D
@@ -195,6 +196,7 @@ flowchart TD
 | **Social** | The fourth tab: a Chats list (All, Groups and Unread filters) and a Friends list, with search across both. See the [scope note](./social-page-scope.md). It's a skeleton on mock data for now: real chat and friend requests aren't built yet. |
 | **Profile** | Your photo or initials, your name, and your next joined game, plus the gear icon that opens Settings. Loads through `getProfile()` and `getGames()` in `src/api/`, with a spinner and an error with Try again. Username, win/loss record and reliability are hidden until those are decided; Edit profile doesn't do anything yet. |
 | **Game detail** | One game: when, where, who's going, spots left, and the Join button. It opens on top of the tabs with a back button. The game comes from `getGame(id)`; spots filled are counted from its players, and "Hosted N games" under the host is counted from the host's games (cancelled ones don't count). Join calls `joinGame(id)` and shows Joined or Waitlisted; once you're in, the button becomes Leave (`leaveGame(id)`). Waitlisted players see their place in line ("2nd on the waitlist"), counted from when each waitlisted player joined. The host gets a Host options button that opens a sheet with Cancel game, which asks to confirm and then calls `cancelGame(id)`. A cancelled game can't be joined. Has loading and error states with Try again. The game and Join and Leave all go to the database. |
+| **Player profile** | Another player's photo or initials, name, home campus and games played (joined games that have ended, not cancelled ones). Opened by tapping the host or a player on Game detail. Loads through `getPlayer(id)` and `getGamesPlayed(id)` in `src/api/profile.ts`; a missing or deleted player shows "This player isn't available". |
 | **Notifications** | Your list of updates (game cancelled, spot opened). Opened from the bell on Home. |
 | **Create game** | The full-screen form to host a game. Duration is 1, 1.5 or 2 hours, and the place is picked from the campus's fixed spots (`getLocations(campus)`). Posting it opens the new game's detail page. |
 | **Settings** | Opened from the gear on Profile. A mock profile, Account, Preferences, Privacy & Safety, Support, a placeholder Sign out, and Delete account. Blocked players shows how many players you blocked and opens their list. Terms & Privacy Policy opens a placeholder browser URL. Unfinished rows do nothing. |

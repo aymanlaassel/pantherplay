@@ -22,7 +22,7 @@ export type GameRow = {
   players: { status: PlayerStatus; joined_at: string; profile: ProfileRow }[];
 };
 
-const PROFILE_COLUMNS = 'id, display_name, avatar_url, campus';
+export const PROFILE_COLUMNS = 'id, display_name, avatar_url, campus';
 export const LOCATION_COLUMNS = 'id, campus, name, photo_url, latitude, longitude';
 
 // One request for a game and everything its card and page show. `!host_id` / `!user_id` say which
