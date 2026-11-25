@@ -17,6 +17,7 @@ jest.mock('expo-router', () => ({
   useFocusEffect: (effect: () => void) => require('react').useEffect(effect, [effect]),
 }));
 jest.mock('@/api/delay', () => ({ delay: () => Promise.resolve() }));
+jest.mock('@/api/games', () => require('@/mock/games-api'));
 jest.mock('@react-native-async-storage/async-storage', () =>
   require('@react-native-async-storage/async-storage/jest/async-storage-mock'),
 );

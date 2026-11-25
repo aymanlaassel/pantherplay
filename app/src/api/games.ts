@@ -1,88 +1,91 @@
-// Every screen gets games from here. These return mock data and are replaced by Supabase calls in W3-08.
+// Every screen gets games from here, from Supabase. Join, Leave and Create go through the
+// database's functions, which decide capacity; the reads use RLS-protected selects.
 import type { Campus } from '@/components/campus-toggle';
-import { mockGames } from '@/mock/games';
-import { LOCATIONS } from '@/mock/locations';
+import { getUserId } from '@/lib/auth';
+import { supabase } from '@/lib/supabase';
 
-import { SPORTS } from './sports';
-import { ME } from '@/mock/people';
-
-import { delay } from './delay';
+import { GAME_COLUMNS, toGameRecord, type GameRow } from './rows';
 import type { Game, GameRecord, JoinResult, NewGame } from './types';
 
-let created = 0;
+// Postgres's code for text that isn't a valid id, like a mistyped link.
+const INVALID_ID = '22P02';
 
 // Spots filled and my place are counted from the players, not stored.
-function withCounts(record: GameRecord): Game {
-  const mine = record.players.find((p) => p.profile.id === ME.id)?.status;
+function withCounts(record: GameRecord, me: string | null, hostGames: Map<string, number>): Game {
+  const mine = record.players.find((p) => p.profile.id === me)?.status;
   return {
     ...record,
     spotsFilled: record.players.filter((p) => p.status === 'joined').length,
-    hostGamesCount: mockGames().filter((g) => g.host.id === record.host.id && g.status !== 'cancelled').length,
+    hostGamesCount: hostGames.get(record.host.id) ?? 0,
     myStatus: mine === 'joined' || mine === 'waitlisted' ? mine : null,
   };
 }
 
-function find(id: string): GameRecord {
-  const record = mockGames().find((g) => g.id === id);
-  if (!record) throw new Error('Game not found');
-  return record;
+// How many games each host has posted, not counting cancelled ones. One request for all hosts.
+async function countHostGames(hostIds: string[]): Promise<Map<string, number>> {
+  const counts = new Map<string, number>();
+  if (hostIds.length === 0) return counts;
+  const { data, error } = await supabase.from('games').select('host_id').in('host_id', [...new Set(hostIds)]).neq('status', 'cancelled');
+  if (error) throw new Error(error.message);
+  for (const { host_id } of data as { host_id: string }[]) counts.set(host_id, (counts.get(host_id) ?? 0) + 1);
+  return counts;
+}
+
+async function toGames(rows: GameRow[]): Promise<Game[]> {
+  const records = rows.map(toGameRecord);
+  const [me, hostGames] = await Promise.all([getUserId(), countHostGames(records.map((r) => r.host.id))]);
+  return records.map((record) => withCounts(record, me, hostGames));
 }
 
 // Games on a campus, soonest first. Cancelled games are not listed.
 export async function getGames(campus: Campus): Promise<Game[]> {
-  await delay();
-  return mockGames()
-    .filter((g) => g.location.campus === campus && g.status !== 'cancelled')
-    .sort((a, b) => a.startsAt.localeCompare(b.startsAt))
-    .map(withCounts);
+  const { data, error } = await supabase
+    .from('games')
+    .select(GAME_COLUMNS)
+    .eq('location.campus', campus)
+    .neq('status', 'cancelled')
+    .order('starts_at');
+  if (error) throw new Error(error.message);
+  return toGames(data as unknown as GameRow[]);
 }
 
-// One game, or null if no game has this id.
+// One game, or null if no game has this id. A cancelled game is still returned, so its page can say so.
 export async function getGame(id: string): Promise<Game | null> {
-  await delay();
-  const record = mockGames().find((g) => g.id === id);
-  return record ? withCounts(record) : null;
+  const { data, error } = await supabase.from('games').select(GAME_COLUMNS).eq('id', id).maybeSingle();
+  if (error?.code === INVALID_ID) return null;
+  if (error) throw new Error(error.message);
+  if (!data) return null;
+  const [game] = await toGames([data as unknown as GameRow]);
+  return game;
 }
 
-// Imitates the join_game RPC: the database, not the app, decides Joined or Waitlisted.
+// The database decides Joined or Waitlisted: join_game locks the game and counts its spots.
 export async function joinGame(id: string): Promise<JoinResult> {
-  await delay();
-  const record = find(id);
-  if (record.status === 'cancelled') throw new Error('Game is cancelled');
-  const mine = record.players.find((p) => p.profile.id === ME.id);
-  if (mine?.status === 'joined' || mine?.status === 'waitlisted') return mine.status;
-  const full = withCounts(record).spotsFilled >= record.maxPlayers;
-  const status = full ? 'waitlisted' : 'joined';
-  if (mine) Object.assign(mine, { status, joinedAt: new Date().toISOString() });
-  else record.players.push({ profile: ME, status, joinedAt: new Date().toISOString() });
-  return status;
+  const { data, error } = await supabase.rpc('join_game', { p_game_id: id });
+  if (error) throw new Error(error.message);
+  if (data !== 'joined' && data !== 'waitlisted') throw new Error('Unexpected answer from join_game');
+  return data;
 }
 
+// If you had a spot, leave_game gives it to the first waitlisted player.
 export async function leaveGame(id: string): Promise<void> {
-  await delay();
-  const mine = find(id).players.find((p) => p.profile.id === ME.id);
-  if (mine) mine.status = 'left';
+  const { error } = await supabase.rpc('leave_game', { p_game_id: id });
+  if (error) throw new Error(error.message);
 }
 
-export async function createGame(input: NewGame): Promise<Game> {
-  await delay();
-  // Like the location_id foreign key: only a spot from the fixed list is accepted.
-  const location = LOCATIONS.find((l) => l.id === input.locationId);
-  if (!location) throw new Error('Unknown location');
-  const sport = SPORTS.find((s) => s.code === input.sport);
-  if (!sport) throw new Error('Unknown sport');
-  created += 1;
-  const { locationId, ...rest } = input;
-  const record: GameRecord = {
-    ...rest,
-    id: `new-${created}`,
-    host: ME,
-    sport,
-    location,
-    notes: rest.notes || null,
-    status: 'open',
-    players: [{ profile: ME, status: 'joined', joinedAt: new Date().toISOString() }],
-  };
-  mockGames().push(record);
-  return withCounts(record);
+// Posts the game with you as host and first player, and returns its id.
+// The database checks the time, duration, location and sport, so errors come back from there.
+export async function createGame(input: NewGame): Promise<string> {
+  const { data, error } = await supabase.rpc('create_game', {
+    p_sport: input.sport,
+    p_location_id: input.locationId,
+    p_starts_at: input.startsAt,
+    p_duration_minutes: input.durationMinutes,
+    p_max_players: input.maxPlayers,
+    p_skill_level: input.skillLevel,
+    p_notes: input.notes,
+  });
+  if (error) throw new Error(error.message);
+  if (typeof data !== 'string') throw new Error('Unexpected answer from create_game');
+  return data;
 }

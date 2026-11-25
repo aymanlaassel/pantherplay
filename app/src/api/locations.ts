@@ -1,11 +1,13 @@
-// The fixed list of game spots. Returns mock data; replaced by a Supabase read in W3-08.
+// The fixed list of game spots, read from the locations table.
 import type { Campus } from '@/components/campus-toggle';
-import { LOCATIONS } from '@/mock/locations';
+import { supabase } from '@/lib/supabase';
 
-import { delay } from './delay';
+import { LOCATION_COLUMNS, toLocation, type LocationRow } from './rows';
 import type { Location } from './types';
 
+// The spots on one campus, by name.
 export async function getLocations(campus: Campus): Promise<Location[]> {
-  await delay();
-  return LOCATIONS.filter((l) => l.campus === campus);
+  const { data, error } = await supabase.from('locations').select(LOCATION_COLUMNS).eq('campus', campus).order('name');
+  if (error) throw new Error(error.message);
+  return (data as LocationRow[]).map(toLocation);
 }

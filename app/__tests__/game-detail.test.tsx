@@ -14,6 +14,7 @@ jest.mock('expo-router', () => ({
   useLocalSearchParams: jest.fn(),
 }));
 jest.mock('@/api/delay', () => ({ delay: () => Promise.resolve() }));
+jest.mock('@/api/games', () => require('@/mock/games-api'));
 jest.mock('react-native-safe-area-context', () => require('react-native-safe-area-context/jest/mock').default);
 
 const open = async (id: string) => {
@@ -38,6 +39,18 @@ test('shows the game from the Figma frame', async () => {
   expect(screen.getByText('+2 more')).toBeTruthy();
   expect(screen.getByText('From the host')).toBeTruthy();
   expect(screen.getByText('Cancellation')).toBeTruthy();
+});
+
+test('a game on another day shows its date, not Today', async () => {
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  tomorrow.setHours(18, 0, 0, 0);
+  const game = mockGames().find((g) => g.id === '1')!;
+  game.startsAt = tomorrow.toISOString();
+  await open('1');
+  const day = tomorrow.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' });
+  expect(screen.getByText(new RegExp(`^${day}, 6:00\\sPM - 7:00\\sPM$`))).toBeTruthy();
+  expect(screen.queryByText(/^Today,/)).toBeNull();
 });
 
 test.each(['1', '2', '3', 'full', 'cancelled', 'soon', 'long-text'])('game %s shows the button and badge for its state', async (id) => {

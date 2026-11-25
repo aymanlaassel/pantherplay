@@ -3,13 +3,15 @@ import { fireEvent, render, screen } from '@testing-library/react-native';
 
 import * as api from '@/api/games';
 import GameDetailScreen from '@/app/game/[id]';
-import { resetMockGames } from '@/mock/games';
+import { mockGames, resetMockGames } from '@/mock/games';
+import { me } from '@/mock/people';
 
 jest.mock('expo-router', () => ({
   router: { back: jest.fn(), replace: jest.fn(), canGoBack: jest.fn(() => true) },
   useLocalSearchParams: jest.fn(),
 }));
 jest.mock('@/api/delay', () => ({ delay: () => Promise.resolve() }));
+jest.mock('@/api/games', () => require('@/mock/games-api'));
 jest.mock('react-native-safe-area-context', () => require('react-native-safe-area-context/jest/mock').default);
 
 const open = async (id: string) => {
@@ -21,6 +23,27 @@ beforeEach(() => resetMockGames());
 
 describe('Join and Leave', () => {
   afterEach(() => jest.restoreAllMocks());
+
+  test('shows the answer the database gave, not one the app worked out', async () => {
+    jest.spyOn(api, 'joinGame').mockResolvedValueOnce('waitlisted');
+    await open('1'); // has room, so only the answer can make it say Waitlisted
+    await fireEvent.press(screen.getByText('Join game'));
+    expect(api.joinGame).toHaveBeenCalledWith('1');
+    expect(screen.getByText('Waitlisted')).toBeTruthy();
+  });
+
+  test('reopening a game I am waitlisted for still says Waitlisted', async () => {
+    mockGames().find((g) => g.id === 'full')!.players.push(me('waitlisted'));
+    await open('full');
+    expect(screen.getByText('Waitlisted')).toBeTruthy();
+    expect(screen.getByText('Leave game')).toBeTruthy();
+  });
+
+  test('a cancelled game I was in does not say Joined', async () => {
+    mockGames().find((g) => g.id === 'cancelled')!.players.push(me('joined'));
+    await open('cancelled');
+    expect(screen.queryByText('Joined')).toBeNull();
+  });
 
   test('joining a game with room shows Joined, then Leave', async () => {
     await open('1');

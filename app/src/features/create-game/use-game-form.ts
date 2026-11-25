@@ -60,8 +60,8 @@ export function useGameForm() {
     setPosting(true);
     setFailed(false);
     try {
-      const game = await createGame(toNewGame(form));
-      router.replace(`/game/${game.id}`);
+      const id = await createGame(toNewGame(form));
+      router.replace(`/game/${id}`);
       return 'posted';
     } catch {
       setFailed(true);

@@ -1,145 +1,257 @@
 import { createGame, getGame, getGames, joinGame, leaveGame } from '@/api/games';
 import { getLocations } from '@/api/locations';
-import { mockGames, resetMockGames } from '@/mock/games';
+import type { GameRow, LocationRow, ProfileRow } from '@/api/rows';
+import type { NewGame } from '@/api/types';
+import { getUserId } from '@/lib/auth';
+import { supabase } from '@/lib/supabase';
 
-jest.mock('@/api/delay', () => ({ delay: () => Promise.resolve() }));
+jest.mock('@/lib/auth', () => ({ getUserId: jest.fn() }));
 
-beforeEach(() => resetMockGames());
+const rpc = supabase.rpc as jest.Mock;
+const from = supabase.from as jest.Mock;
+// What supabase.rpc resolves to: the function's answer, or the error Postgres raised.
+const answers = (data: unknown) => rpc.mockResolvedValueOnce({ data, error: null });
+const fails = (message: string) => rpc.mockResolvedValueOnce({ data: null, error: { message } });
+
+type Result = { data: unknown; error: { message: string; code?: string } | null };
+// A stand-in for one supabase.from() query: every filter returns the query, and awaiting it
+// (or .maybeSingle()) gives `result`. Each call to from() takes the next queued query.
+function queue(result: Result) {
+  const query: Record<string, unknown> = {
+    then: (onDone: (r: Result) => unknown, onFail: (e: unknown) => unknown) => Promise.resolve(result).then(onDone, onFail),
+    maybeSingle: jest.fn(async () => result),
+  };
+  for (const name of ['select', 'eq', 'neq', 'order', 'in']) query[name] = jest.fn(() => query);
+  from.mockReturnValueOnce(query);
+  return query as Record<'select' | 'eq' | 'neq' | 'order' | 'in' | 'maybeSingle', jest.Mock>;
+}
+
+const profile = (id: string, name: string): ProfileRow => ({ id, display_name: name, avatar_url: null, campus: 'MMC' });
+const AT = '2026-11-25T23:00:00+00:00';
+const LOCATION: LocationRow = { id: 'loc-1', campus: 'MMC', name: 'Soccer Field 2', photo_url: null, latitude: 25.7596, longitude: -80.3794 };
+const gameRow = (id: string, over: Partial<GameRow> = {}): GameRow => ({
+  id,
+  starts_at: AT,
+  duration_minutes: 90,
+  skill_level: 'beginner',
+  max_players: 3,
+  notes: null,
+  status: 'open',
+  host: profile('host-1', 'Alex Rivera'),
+  sport: { code: 'soccer', name: 'Soccer' },
+  location: LOCATION,
+  players: [
+    { status: 'joined', joined_at: AT, profile: profile('host-1', 'Alex Rivera') },
+    { status: 'joined', joined_at: AT, profile: profile('me', 'Panther Student') },
+    { status: 'left', joined_at: AT, profile: profile('p3', 'Left Early') },
+    { status: 'waitlisted', joined_at: AT, profile: profile('p4', 'Wait Listed') },
+  ],
+  ...over,
+});
+
+beforeEach(() => {
+  rpc.mockClear();
+  from.mockReset();
+  jest.mocked(getUserId).mockResolvedValue('me');
+});
 
 describe('getGames', () => {
-  test('lists a campus soonest first and hides cancelled games', async () => {
+  test('asks for the campus, without cancelled games, soonest first', async () => {
+    const games = queue({ data: [], error: null });
+    await getGames('BBC');
+    expect(from).toHaveBeenCalledWith('games');
+    expect(games.eq).toHaveBeenCalledWith('location.campus', 'BBC');
+    expect(games.neq).toHaveBeenCalledWith('status', 'cancelled');
+    expect(games.order).toHaveBeenCalledWith('starts_at');
+  });
+
+  test('turns each row into the contract, in camelCase', async () => {
+    queue({ data: [gameRow('g1', { notes: 'Bring water' })], error: null });
+    queue({ data: [{ host_id: 'host-1' }], error: null });
+    const [game] = await getGames('MMC');
+    expect(game).toMatchObject({
+      id: 'g1',
+      host: { id: 'host-1', fullName: 'Alex Rivera', avatarUrl: null, campus: 'MMC' },
+      sport: { code: 'soccer', name: 'Soccer' },
+      location: { id: 'loc-1', campus: 'MMC', name: 'Soccer Field 2', photoUrl: null, latitude: 25.7596, longitude: -80.3794 },
+      startsAt: AT,
+      durationMinutes: 90,
+      skillLevel: 'beginner',
+      maxPlayers: 3,
+      notes: 'Bring water',
+      status: 'open',
+    });
+    expect(game.players[1]).toEqual({ profile: { id: 'me', fullName: 'Panther Student', avatarUrl: null, campus: 'MMC' }, status: 'joined', joinedAt: AT });
+  });
+
+  test('counts spots from joined players only, and finds my place by my user id', async () => {
+    queue({ data: [gameRow('g1')], error: null });
+    queue({ data: [], error: null });
+    expect((await getGames('MMC'))[0]).toMatchObject({ spotsFilled: 2, myStatus: 'joined' });
+  });
+
+  test('my place is waitlisted, or empty after I left or when nobody is signed in', async () => {
+    const rows = [gameRow('g1'), gameRow('g2'), gameRow('g3')];
+    rows[0].players[1].status = 'waitlisted';
+    rows[1].players[1].status = 'left';
+    queue({ data: rows, error: null });
+    queue({ data: [], error: null });
+    expect((await getGames('MMC')).map((g) => g.myStatus)).toEqual(['waitlisted', null, 'joined']);
+
+    jest.mocked(getUserId).mockResolvedValueOnce(null);
+    queue({ data: [gameRow('g1')], error: null });
+    queue({ data: [], error: null });
+    expect((await getGames('MMC'))[0].myStatus).toBeNull();
+  });
+
+  test("counts each host's games in one request, leaving out cancelled ones", async () => {
+    queue({ data: [gameRow('g1'), gameRow('g2'), gameRow('g3', { host: profile('host-2', 'Maya T.') })], error: null });
+    const counts = queue({ data: [{ host_id: 'host-1' }, { host_id: 'host-1' }, { host_id: 'host-1' }, { host_id: 'host-2' }], error: null });
     const games = await getGames('MMC');
-    const ids = games.map((game) => game.id);
-    expect(ids).toEqual(expect.arrayContaining(['1', '2', 'full']));
-    expect(ids).not.toContain('cancelled');
-    expect(ids).not.toContain('3');
-    const times = games.map((game) => game.startsAt);
-    expect(times).toEqual([...times].sort());
+    expect(counts.in).toHaveBeenCalledWith('host_id', ['host-1', 'host-2']);
+    expect(counts.neq).toHaveBeenCalledWith('status', 'cancelled');
+    expect(games.map((g) => g.hostGamesCount)).toEqual([3, 3, 1]);
   });
 
-  test('can return an empty list', async () => {
-    resetMockGames([]);
+  test('an empty campus is an empty list, with no second request', async () => {
+    queue({ data: [], error: null });
     expect(await getGames('MMC')).toEqual([]);
+    expect(from).toHaveBeenCalledTimes(1);
   });
 
-  test('counts spots filled from the joined players, not stored', async () => {
-    expect(await getGame('1')).toMatchObject({ spotsFilled: 7, myStatus: null });
-    expect(await getGame('full')).toMatchObject({ spotsFilled: 10 });
+  test('throws when either request fails, so the screen shows its error state', async () => {
+    queue({ data: null, error: { message: 'Network request failed' } });
+    await expect(getGames('MMC')).rejects.toThrow('Network request failed');
+
+    queue({ data: [gameRow('g1')], error: null });
+    queue({ data: null, error: { message: 'JWT expired' } });
+    await expect(getGames('MMC')).rejects.toThrow('JWT expired');
   });
 });
 
 describe('getGame', () => {
-  test('returns null for an unknown id', async () => {
-    expect(await getGame('nope')).toBeNull();
+  test('reads one game by id, counted the same way', async () => {
+    const game = queue({ data: gameRow('g1'), error: null });
+    queue({ data: [{ host_id: 'host-1' }], error: null });
+    expect(await getGame('g1')).toMatchObject({ id: 'g1', spotsFilled: 2, myStatus: 'joined', hostGamesCount: 1 });
+    expect(game.eq).toHaveBeenCalledWith('id', 'g1');
+    expect(game.maybeSingle).toHaveBeenCalled();
   });
 
   test('still returns a cancelled game, so its page can say so', async () => {
-    expect(await getGame('cancelled')).toMatchObject({ status: 'cancelled' });
+    const game = queue({ data: gameRow('g1', { status: 'cancelled' }), error: null });
+    queue({ data: [], error: null });
+    expect(await getGame('g1')).toMatchObject({ status: 'cancelled' });
+    expect(game.neq).not.toHaveBeenCalled();
+  });
+
+  test('returns null for an id with no game, or one that is not a valid id at all', async () => {
+    queue({ data: null, error: null });
+    expect(await getGame('00000000-0000-0000-0000-000000000000')).toBeNull();
+    queue({ data: null, error: { message: 'invalid input syntax for type uuid: "nope"', code: '22P02' } });
+    expect(await getGame('nope')).toBeNull();
+  });
+
+  test('throws on any other error', async () => {
+    queue({ data: null, error: { message: 'Network request failed' } });
+    await expect(getGame('g1')).rejects.toThrow('Network request failed');
   });
 });
 
-describe('joinGame and leaveGame', () => {
-  test('joining a game with room answers joined and takes a spot', async () => {
-    expect(await joinGame('1')).toBe('joined');
-    expect(await getGame('1')).toMatchObject({ spotsFilled: 8, myStatus: 'joined' });
+describe('joinGame', () => {
+  test('asks join_game and answers joined', async () => {
+    answers('joined');
+    expect(await joinGame('game-1')).toBe('joined');
+    expect(rpc).toHaveBeenCalledWith('join_game', { p_game_id: 'game-1' });
   });
 
-  test('joining a full game answers waitlisted and takes no spot', async () => {
-    expect(await joinGame('full')).toBe('waitlisted');
-    expect(await getGame('full')).toMatchObject({ spotsFilled: 10, myStatus: 'waitlisted' });
+  test('answers waitlisted when the database says the game is full', async () => {
+    answers('waitlisted');
+    expect(await joinGame('game-1')).toBe('waitlisted');
   });
 
-  test('joining twice does not add a second spot', async () => {
-    await joinGame('1');
-    expect(await joinGame('1')).toBe('joined');
-    expect(await getGame('1')).toMatchObject({ spotsFilled: 8 });
+  test('passes on what the database rejected, like a cancelled or started game', async () => {
+    fails('Game is cancelled');
+    await expect(joinGame('game-1')).rejects.toThrow('Game is cancelled');
+    fails('Game has already started');
+    await expect(joinGame('game-1')).rejects.toThrow('Game has already started');
   });
 
-  test('leaving gives the spot back, and leaving a waitlist keeps the game full', async () => {
-    await joinGame('1');
-    await leaveGame('1');
-    expect(await getGame('1')).toMatchObject({ spotsFilled: 7, myStatus: null });
-
-    await joinGame('full');
-    await leaveGame('full');
-    expect(await getGame('full')).toMatchObject({ spotsFilled: 10, myStatus: null });
+  test('throws when the network or the session fails', async () => {
+    rpc.mockRejectedValueOnce(new TypeError('Network request failed'));
+    await expect(joinGame('game-1')).rejects.toThrow('Network request failed');
+    fails('permission denied for function join_game'); // signed out mid-action
+    await expect(joinGame('game-1')).rejects.toThrow();
   });
 
-  test('a game can be joined again after leaving it', async () => {
-    await joinGame('1');
-    await leaveGame('1');
-    expect(await joinGame('1')).toBe('joined');
-    expect(await getGame('1')).toMatchObject({ spotsFilled: 8, myStatus: 'joined' });
+  test('throws instead of guessing when the answer is not joined or waitlisted', async () => {
+    answers(null);
+    await expect(joinGame('game-1')).rejects.toThrow('Unexpected answer');
+    answers('left');
+    await expect(joinGame('game-1')).rejects.toThrow('Unexpected answer');
+  });
+});
+
+describe('leaveGame', () => {
+  test('asks leave_game', async () => {
+    answers(null);
+    await expect(leaveGame('game-1')).resolves.toBeUndefined();
+    expect(rpc).toHaveBeenCalledWith('leave_game', { p_game_id: 'game-1' });
   });
 
-  test('a cancelled game cannot be joined', async () => {
-    await expect(joinGame('cancelled')).rejects.toThrow('cancelled');
-  });
-
-  test('an unknown game cannot be joined or left', async () => {
-    await expect(joinGame('nope')).rejects.toThrow();
-    await expect(leaveGame('nope')).rejects.toThrow();
+  test('passes on a database error', async () => {
+    fails('Game not found');
+    await expect(leaveGame('nope')).rejects.toThrow('Game not found');
   });
 });
 
 describe('createGame', () => {
-  test('the new game can be read, is listed on its campus, and has the host in it', async () => {
-    const created = await createGame({
-      sport: 'tennis',
-      locationId: 'loc-bbc',
-      startsAt: new Date(Date.now() + 3_600_000).toISOString(),
-      durationMinutes: 90,
-      maxPlayers: 4,
-      skillLevel: 'advanced',
-      notes: '',
+  const input: NewGame = {
+    sport: 'flag_football',
+    locationId: 'a3f1c2d4-0000-4000-8000-000000000001',
+    startsAt: '2026-12-01T23:00:00.000Z',
+    durationMinutes: 90,
+    maxPlayers: 14,
+    skillLevel: 'intermediate',
+    notes: 'Bring cleats',
+  };
+
+  test('sends every field to create_game, sport by code, and returns the new id', async () => {
+    answers('new-game-id');
+    expect(await createGame(input)).toBe('new-game-id');
+    expect(rpc).toHaveBeenCalledWith('create_game', {
+      p_sport: 'flag_football',
+      p_location_id: 'a3f1c2d4-0000-4000-8000-000000000001',
+      p_starts_at: '2026-12-01T23:00:00.000Z',
+      p_duration_minutes: 90,
+      p_max_players: 14,
+      p_skill_level: 'intermediate',
+      p_notes: 'Bring cleats',
     });
-    expect(created).toMatchObject({ sport: { code: 'tennis', name: 'Tennis' }, maxPlayers: 4, spotsFilled: 1, myStatus: 'joined', notes: null });
-    // The game gets the real spot, coordinates included, not a made-up one at 0,0.
-    expect(await getGame(created.id)).toMatchObject({ location: { id: 'loc-bbc', campus: 'BBC', latitude: 25.9111 } });
-    expect((await getGames('BBC')).map((game) => game.id)).toContain(created.id);
   });
 
-  test('a location that is not in the fixed list is rejected', async () => {
-    const before = (await getGames('MMC')).length;
-    await expect(
-      createGame({
-        sport: 'tennis',
-        locationId: 'made-up',
-        startsAt: new Date(Date.now() + 3_600_000).toISOString(),
-        durationMinutes: 60,
-        maxPlayers: 4,
-        skillLevel: 'beginner',
-        notes: '',
-      }),
-    ).rejects.toThrow('Unknown location');
-    expect(await getGames('MMC')).toHaveLength(before);
+  test('passes on what the database rejected', async () => {
+    fails('Start time must be in the future');
+    await expect(createGame(input)).rejects.toThrow('Start time must be in the future');
+  });
+
+  test('throws when no id comes back', async () => {
+    answers(null);
+    await expect(createGame(input)).rejects.toThrow('Unexpected answer');
   });
 });
 
 describe('getLocations', () => {
-  test('lists only the spots on the asked campus', async () => {
-    expect((await getLocations('BBC')).map((l) => l.id)).toEqual(['loc-bbc']);
-    expect((await getLocations('MMC')).every((l) => l.campus === 'MMC')).toBe(true);
+  test('reads the spots on one campus by name, in the contract shape', async () => {
+    const query = queue({ data: [LOCATION], error: null });
+    expect(await getLocations('MMC')).toEqual([{ id: 'loc-1', campus: 'MMC', name: 'Soccer Field 2', photoUrl: null, latitude: 25.7596, longitude: -80.3794 }]);
+    expect(from).toHaveBeenCalledWith('locations');
+    expect(query.eq).toHaveBeenCalledWith('campus', 'MMC');
+    expect(query.order).toHaveBeenCalledWith('name');
   });
-});
 
-describe('hostGamesCount', () => {
-  test("counts the host's games but not cancelled ones, and grows when they post", async () => {
-    const all = mockGames();
-    const alex = all[0].host.id;
-    const notCancelled = all.filter((g) => g.host.id === alex && g.status !== 'cancelled').length;
-    expect(all.some((g) => g.host.id === alex && g.status === 'cancelled')).toBe(true); // so the exclusion is really tested
-    expect((await getGame('1'))?.hostGamesCount).toBe(notCancelled);
-
-    const first = await createGame({
-      sport: 'tennis',
-      locationId: 'loc-bbc',
-      startsAt: new Date(Date.now() + 3_600_000).toISOString(),
-      durationMinutes: 60,
-      maxPlayers: 4,
-      skillLevel: 'beginner',
-      notes: '',
-    });
-    expect(first.hostGamesCount).toBe(1);
+  test('throws when the request fails', async () => {
+    queue({ data: null, error: { message: 'Network request failed' } });
+    await expect(getLocations('BBC')).rejects.toThrow('Network request failed');
   });
 });

@@ -16,6 +16,12 @@ function statusLabel(game: Game): string | null {
   return game.status === 'confirmed' ? 'Confirmed' : null;
 }
 
+// Same words as the game page's button: a full game's join puts you on the waitlist.
+function joinLabel(game: Game, spotsLeft: number): string {
+  if (game.myStatus) return 'View game';
+  return spotsLeft <= 0 ? 'Join waitlist' : 'Join game';
+}
+
 type GameCardProps = { game: Game; onPress: () => void };
 
 export function GameCard({ game, onPress }: GameCardProps) {
@@ -53,7 +59,7 @@ export function GameCard({ game, onPress }: GameCardProps) {
           <Text style={styles.price}>Free</Text>
         </View>
         <View style={styles.divider} />
-        <ButtonJoin label={game.myStatus ? 'View game' : 'Join game'} onPress={onPress} />
+        <ButtonJoin label={joinLabel(game, spotsLeft)} onPress={onPress} />
       </View>
     </Pressable>
   );
