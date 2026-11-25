@@ -26,6 +26,10 @@ jest.mock('@/api/games', () => require('@/mock/games-api'));
 jest.mock('expo-router', () => ({ router: { back: jest.fn(), replace: jest.fn(), canGoBack: jest.fn(() => true) } }));
 jest.mock('react-native-safe-area-context', () => require('react-native-safe-area-context/jest/mock').default);
 
+// The first render of the Create screen loads a lot of modules and can pass Jest's 5s default on
+// slower CI machines. When it does, the next test fails too, while the first render is still running.
+jest.setTimeout(15_000);
+
 const now = new Date('2030-01-01T12:00:00');
 const valid: GameForm = {
   sport: 'soccer',
