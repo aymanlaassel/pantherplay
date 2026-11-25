@@ -29,3 +29,17 @@ jobs:
       - run: npm run lint
       - run: npm run typecheck
       - run: npm test
+
+  # Runs the SQL tests in supabase/tests/ against a fresh local database built from our migrations,
+  # so a broken migration or RPC turns the check red. Only Postgres is needed, so the rest is skipped (-x).
+  database:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: supabase/setup-cli@v1
+        with:
+          version: 3.1.0 # v3: v2 can't read our config.toml
+      - run: supabase start -x gotrue,realtime,storage-api,imgproxy,kong,mailpit,postgrest,postgres-meta,studio,edge-runtime,logflare,vector,supavisor
+      - run: supabase db reset
+      - run: supabase test db
