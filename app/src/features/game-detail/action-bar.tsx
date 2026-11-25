@@ -34,13 +34,16 @@ export function ActionBar({ game, answer, busy, failed, onJoin, onLeave }: Actio
   const cancelled = state === 'cancelled';
   const inGame = game.myStatus !== null;
   const label = ACTION_LABEL[cancelled ? 'cancelled' : inGame ? 'joined' : state];
+  // The answer from tapping Join. After a reload, Waitlisted still shows: unlike Joined, it has no badge.
+  const saved = game.myStatus === 'waitlisted' ? 'waitlisted' : null;
+  const place = cancelled ? null : (answer ?? saved);
 
   return (
     <View style={[styles.bar, { paddingBottom: insets.bottom + space[12] }]}>
       {failed ? <Text style={[styles.note, styles.error]}>{"That didn't work. Try again."}</Text> : null}
-      {answer ? (
+      {place ? (
         <Text accessibilityLiveRegion="polite" style={styles.note}>
-          {ANSWER_LABEL[answer]}
+          {ANSWER_LABEL[place]}
         </Text>
       ) : null}
       {inGame || cancelled ? (

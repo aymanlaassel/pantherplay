@@ -3,7 +3,8 @@ import { fireEvent, render, screen } from '@testing-library/react-native';
 
 import * as api from '@/api/games';
 import GameDetailScreen from '@/app/game/[id]';
-import { resetMockGames } from '@/mock/games';
+import { mockGames, resetMockGames } from '@/mock/games';
+import { me } from '@/mock/people';
 
 jest.mock('expo-router', () => ({
   router: { back: jest.fn(), replace: jest.fn(), canGoBack: jest.fn(() => true) },
@@ -29,6 +30,19 @@ describe('Join and Leave', () => {
     await fireEvent.press(screen.getByText('Join game'));
     expect(api.joinGame).toHaveBeenCalledWith('1');
     expect(screen.getByText('Waitlisted')).toBeTruthy();
+  });
+
+  test('reopening a game I am waitlisted for still says Waitlisted', async () => {
+    mockGames().find((g) => g.id === 'full')!.players.push(me('waitlisted'));
+    await open('full');
+    expect(screen.getByText('Waitlisted')).toBeTruthy();
+    expect(screen.getByText('Leave game')).toBeTruthy();
+  });
+
+  test('a cancelled game I was in does not say Joined', async () => {
+    mockGames().find((g) => g.id === 'cancelled')!.players.push(me('joined'));
+    await open('cancelled');
+    expect(screen.queryByText('Joined')).toBeNull();
   });
 
   test('joining a game with room shows Joined, then Leave', async () => {
