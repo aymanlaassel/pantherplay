@@ -4,6 +4,7 @@ import { delay } from '@/api/delay';
 import { SPORTS } from '@/api/sports';
 import type { Game, GameRecord, JoinResult, NewGame } from '@/api/types';
 import type { Campus } from '@/components/campus-toggle';
+import { myPlace } from '@/api/my-place';
 
 import { mockGames } from './games';
 import { LOCATIONS } from './locations';
@@ -12,12 +13,11 @@ import { ME } from './people';
 let created = 0;
 
 function withCounts(record: GameRecord): Game {
-  const mine = record.players.find((p) => p.profile.id === ME.id)?.status;
   return {
     ...record,
     spotsFilled: record.players.filter((p) => p.status === 'joined').length,
     hostGamesCount: mockGames().filter((g) => g.host.id === record.host.id && g.status !== 'cancelled').length,
-    myStatus: mine === 'joined' || mine === 'waitlisted' ? mine : null,
+    ...myPlace(record.players, ME.id),
   };
 }
 

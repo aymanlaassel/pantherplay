@@ -53,6 +53,7 @@ export type Game = GameRecord & {
   spotsFilled: number; // players with status joined
   hostGamesCount: number; // games the host has posted, not counting cancelled ones
   myStatus: 'joined' | 'waitlisted' | null; // the signed-in user's place in this game
+  waitlistPosition: number | null; // 1 for first in line, when myStatus is waitlisted
 };
 
 // The campus comes from the location, so it is not sent.

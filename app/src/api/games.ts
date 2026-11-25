@@ -4,6 +4,7 @@ import type { Campus } from '@/components/campus-toggle';
 import { getUserId } from '@/lib/auth';
 import { supabase } from '@/lib/supabase';
 
+import { myPlace } from './my-place';
 import { GAME_COLUMNS, toGameRecord, type GameRow } from './rows';
 import type { Game, GameRecord, JoinResult, NewGame } from './types';
 
@@ -12,12 +13,11 @@ const INVALID_ID = '22P02';
 
 // Spots filled and my place are counted from the players, not stored.
 function withCounts(record: GameRecord, me: string | null, hostGames: Map<string, number>): Game {
-  const mine = record.players.find((p) => p.profile.id === me)?.status;
   return {
     ...record,
     spotsFilled: record.players.filter((p) => p.status === 'joined').length,
     hostGamesCount: hostGames.get(record.host.id) ?? 0,
-    myStatus: mine === 'joined' || mine === 'waitlisted' ? mine : null,
+    ...myPlace(record.players, me),
   };
 }
 
