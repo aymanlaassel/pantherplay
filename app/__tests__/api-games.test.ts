@@ -1,4 +1,4 @@
-import { cancelGame, createGame, getGame, getGames, joinGame, leaveGame } from '@/api/games';
+import { cancelGame, createGame, getGame, getGames, joinGame, leaveGame, onGamePlayersChange, onGamesChange } from '@/api/games';
 import { getLocations } from '@/api/locations';
 import type { GameRow, LocationRow, ProfileRow } from '@/api/rows';
 import type { NewGame } from '@/api/types';
@@ -279,5 +279,47 @@ describe('getLocations', () => {
   test('throws when the request fails', async () => {
     queue({ data: null, error: { message: 'Network request failed' } });
     await expect(getLocations('BBC')).rejects.toThrow('Network request failed');
+  });
+});
+
+describe('Realtime', () => {
+  // A stand-in channel: remembers the filter and callback that .on() was given.
+  const channel = { on: jest.fn(), subscribe: jest.fn() };
+  const client = supabase as unknown as { channel: jest.Mock; removeChannel: jest.Mock };
+
+  beforeEach(() => {
+    channel.on.mockReset().mockReturnValue(channel);
+    channel.subscribe.mockReset().mockReturnValue(channel);
+    client.channel = jest.fn(() => channel);
+    client.removeChannel = jest.fn(async () => 'ok');
+  });
+
+  test('onGamesChange listens to every change on games, and stops when asked', () => {
+    const onChange = jest.fn();
+    const stop = onGamesChange(onChange);
+    expect(channel.on).toHaveBeenCalledWith('postgres_changes', { event: '*', schema: 'public', table: 'games' }, expect.any(Function));
+    expect(channel.subscribe).toHaveBeenCalled();
+    channel.on.mock.calls[0][2]({});
+    expect(onChange).toHaveBeenCalledTimes(1);
+    stop();
+    expect(client.removeChannel).toHaveBeenCalledWith(channel);
+  });
+
+  test('onGamePlayersChange listens to one game only, and stops when asked', () => {
+    const stop = onGamePlayersChange('g1', jest.fn());
+    expect(channel.on).toHaveBeenCalledWith(
+      'postgres_changes',
+      { event: '*', schema: 'public', table: 'game_players', filter: 'game_id=eq.g1' },
+      expect.any(Function),
+    );
+    stop();
+    expect(client.removeChannel).toHaveBeenCalledWith(channel);
+  });
+
+  test('two listeners at once get their own channels', () => {
+    onGamesChange(jest.fn());
+    onGamesChange(jest.fn());
+    const [first, second] = client.channel.mock.calls.map(([name]) => name);
+    expect(first).not.toBe(second);
   });
 });

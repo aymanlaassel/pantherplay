@@ -12,6 +12,19 @@ import { ME } from './people';
 
 let created = 0;
 
+// Plays the part of Realtime: every write tells whoever is listening. Tests call notifyMockChange()
+// to act as another phone changing the data.
+const listeners = new Set<() => void>();
+export const notifyMockChange = () => listeners.forEach((listener) => listener());
+
+function listen(onChange: () => void): () => void {
+  listeners.add(onChange);
+  return () => listeners.delete(onChange);
+}
+
+export const onGamesChange = listen;
+export const onGamePlayersChange = (_gameId: string, onChange: () => void) => listen(onChange);
+
 function withCounts(record: GameRecord): Game {
   return {
     ...record,
@@ -51,6 +64,7 @@ export async function joinGame(id: string): Promise<JoinResult> {
   const status: JoinResult = withCounts(record).spotsFilled >= record.maxPlayers ? 'waitlisted' : 'joined';
   if (mine) Object.assign(mine, { status, joinedAt: new Date().toISOString() });
   else record.players.push({ profile: ME, status, joinedAt: new Date().toISOString() });
+  notifyMockChange();
   return status;
 }
 
@@ -58,6 +72,7 @@ export async function leaveGame(id: string): Promise<void> {
   await delay();
   const mine = find(id).players.find((p) => p.profile.id === ME.id);
   if (mine) mine.status = 'left';
+  notifyMockChange();
 }
 
 // Plays the part of cancel_game: only the host may cancel.
@@ -66,6 +81,7 @@ export async function cancelGame(id: string): Promise<void> {
   const record = find(id);
   if (record.host.id !== ME.id) throw new Error('Only the host can cancel this game');
   record.status = 'cancelled';
+  notifyMockChange();
 }
 
 export async function createGame(input: NewGame): Promise<string> {
@@ -86,5 +102,6 @@ export async function createGame(input: NewGame): Promise<string> {
     status: 'open',
     players: [{ profile: ME, status: 'joined', joinedAt: new Date().toISOString() }],
   });
+  notifyMockChange();
   return id;
 }

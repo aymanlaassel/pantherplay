@@ -69,7 +69,7 @@ flowchart LR
 | **Google sign-in** | Proving the person owns their Google account. Used until FIU login is ready. Setup: [google-sign-in-setup.md](./google-sign-in-setup.md). |
 | **FIU official login** | Replacing Google later. PantherSoft builds this; we don't. |
 | **Postgres database** | Storing everything that must survive closing the app: profiles, games, who joined. It also **enforces the rules**: Row Level Security (RLS) decides who may read or change each row, and functions like `join_game` stop overbooking. |
-| **Realtime** | Watching the database and pushing changes to every phone with that screen open, so spot counts update without a refresh. |
+| **Realtime** | Watching the database and pushing changes to every phone with that screen open, so spot counts update without a refresh. Discover and Map listen to `games` (`onGamesChange`) and an open Game detail listens to its `game_players` rows (`onGamePlayersChange`), both in `src/api/games.ts`; each screen stops listening when it closes. |
 | **Edge Functions** | Small pieces of server code that Supabase runs for us. Here they decide who should get a notification and hand it to Expo Push. They hold the secret service key, which must never be in the app. |
 | **Expo Push service** | Delivering the notification through Apple and Google so it shows on the lock screen, even when the app is closed. |
 

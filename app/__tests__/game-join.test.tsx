@@ -88,7 +88,8 @@ describe('Join and Leave', () => {
 
   test('a join that worked but could not be reloaded shows the load error, not a failed join', async () => {
     await open('1');
-    jest.spyOn(api, 'getGame').mockRejectedValueOnce(new Error('offline'));
+    // Every reload fails: the one after Join and the live one Realtime starts.
+    jest.spyOn(api, 'getGame').mockRejectedValue(new Error('offline'));
     await fireEvent.press(screen.getByText('Join game'));
     expect(screen.getByText("Couldn't load this game.")).toBeTruthy();
     expect(screen.queryByText("That didn't work. Try again.")).toBeNull();

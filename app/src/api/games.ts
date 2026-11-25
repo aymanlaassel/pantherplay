@@ -79,6 +79,27 @@ export async function cancelGame(id: string): Promise<void> {
   if (error) throw new Error(error.message);
 }
 
+// Each subscription needs its own channel name: Discover and Map can listen at the same time.
+let channels = 0;
+
+// Realtime: calls `onChange` whenever any game is posted or changed. Returns a function that stops listening.
+export function onGamesChange(onChange: () => void): () => void {
+  const channel = supabase
+    .channel(`games-${++channels}`)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'games' }, () => onChange())
+    .subscribe();
+  return () => void supabase.removeChannel(channel);
+}
+
+// Realtime: calls `onChange` whenever someone joins, leaves or is moved off the waitlist of one game.
+export function onGamePlayersChange(gameId: string, onChange: () => void): () => void {
+  const channel = supabase
+    .channel(`game-players-${++channels}`)
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'game_players', filter: `game_id=eq.${gameId}` }, () => onChange())
+    .subscribe();
+  return () => void supabase.removeChannel(channel);
+}
+
 // Posts the game with you as host and first player, and returns its id.
 // The database checks the time, duration, location and sport, so errors come back from there.
 export async function createGame(input: NewGame): Promise<string> {

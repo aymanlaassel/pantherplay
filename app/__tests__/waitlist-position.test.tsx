@@ -65,7 +65,7 @@ describe('Game detail', () => {
     expect(screen.getByText('2nd on the waitlist')).toBeTruthy();
 
     full.players.find((p) => p.profile.id === 'p1')!.status = 'left';
-    screen.unmount();
+    await screen.unmount();
     await open('full');
     expect(await screen.findByText('1st on the waitlist')).toBeTruthy();
   });
