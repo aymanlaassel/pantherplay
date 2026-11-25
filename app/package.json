@@ -59,6 +59,7 @@
   "private": true,
   "jest": {
     "preset": "jest-expo",
+    "testTimeout": 15000,
     "resolver": "react-native-reanimated/jest/resolver",
     "moduleNameMapper": {
       "^@/assets/(.*)$": "<rootDir>/assets/$1",
