@@ -1,6 +1,9 @@
-import { getGamesPlayed, getPlayer } from '@/api/profile';
+import { getGamesPlayed, getMyGames, getMyGamesPlayed, getPlayer } from '@/api/profile';
+import type { GameRow } from '@/api/rows';
+import { getUserId } from '@/lib/auth';
 import { supabase } from '@/lib/supabase';
 
+jest.mock('@/lib/auth', () => ({ getUserId: jest.fn() }));
 jest.mock('@react-native-async-storage/async-storage', () => require('@react-native-async-storage/async-storage/jest/async-storage-mock'));
 
 const from = supabase.from as jest.Mock;
@@ -12,12 +15,15 @@ function queue(result: Result) {
     then: (onDone: (r: Result) => unknown, onFail: (e: unknown) => unknown) => Promise.resolve(result).then(onDone, onFail),
     maybeSingle: jest.fn(async () => result),
   };
-  for (const name of ['select', 'eq', 'neq', 'lt']) query[name] = jest.fn(() => query);
+  for (const name of ['select', 'eq', 'neq', 'lt', 'gt', 'or', 'in', 'order']) query[name] = jest.fn(() => query);
   from.mockReturnValueOnce(query);
-  return query as Record<'select' | 'eq' | 'neq' | 'lt' | 'maybeSingle', jest.Mock>;
+  return query as Record<'select' | 'eq' | 'neq' | 'lt' | 'gt' | 'or' | 'in' | 'order' | 'maybeSingle', jest.Mock>;
 }
 
-beforeEach(() => from.mockReset());
+beforeEach(() => {
+  from.mockReset();
+  jest.mocked(getUserId).mockResolvedValue('me');
+});
 
 describe('getPlayer', () => {
   test('reads one profile by id, in the contract shape', async () => {
@@ -65,5 +71,67 @@ describe('getGamesPlayed', () => {
     expect(await getGamesPlayed('p1', now)).toBe(0);
     queue({ data: null, error: { message: 'JWT expired' } });
     await expect(getGamesPlayed('p1', now)).rejects.toThrow('JWT expired');
+  });
+});
+
+describe('getMyGamesPlayed', () => {
+  test('counts for the signed-in user, and is 0 when nobody is signed in', async () => {
+    const query = queue({ data: [{ game: { starts_at: '2020-01-01T18:00:00Z', duration_minutes: 60 } }], error: null });
+    expect(await getMyGamesPlayed()).toBe(1);
+    expect(query.eq).toHaveBeenCalledWith('user_id', 'me');
+
+    jest.mocked(getUserId).mockResolvedValueOnce(null);
+    expect(await getMyGamesPlayed()).toBe(0);
+  });
+});
+
+describe('getMyGames', () => {
+  const now = new Date('2026-11-25T20:00:00Z');
+  const me = { id: 'me', display_name: 'Panther Student', avatar_url: null, campus: 'MMC' as const };
+  const row = (id: string, startsAt: string, duration: 60 | 90 | 120 = 60): GameRow => ({
+    id,
+    starts_at: startsAt,
+    duration_minutes: duration,
+    skill_level: 'beginner',
+    max_players: 10,
+    notes: null,
+    status: 'open',
+    host: me,
+    sport: { code: 'soccer', name: 'Soccer' },
+    location: { id: 'loc', campus: 'MMC', name: 'Field', photo_url: null, latitude: 0, longitude: 0 },
+    players: [{ status: 'joined', joined_at: startsAt, profile: me }],
+  });
+
+  test('asks for games I host or joined, not cancelled, soonest first, and drops ones that ended', async () => {
+    const players = queue({ data: [{ game_id: 'g1' }, { game_id: 'g2' }], error: null });
+    const games = queue({ data: [row('ended', '2026-11-25T18:30:00Z'), row('playing', '2026-11-25T19:30:00Z'), row('later', '2026-11-26T18:00:00Z')], error: null });
+    queue({ data: [], error: null }); // the hosts' game counts
+    expect((await getMyGames(now)).map((g) => g.id)).toEqual(['playing', 'later']);
+    expect(players.eq).toHaveBeenCalledWith('user_id', 'me');
+    expect(players.eq).toHaveBeenCalledWith('status', 'joined');
+    expect(games.or).toHaveBeenCalledWith('host_id.eq.me,id.in.(g1,g2)');
+    expect(games.neq).toHaveBeenCalledWith('status', 'cancelled');
+    expect(games.gt).toHaveBeenCalledWith('starts_at', '2026-11-25T18:00:00.000Z');
+    expect(games.order).toHaveBeenCalledWith('starts_at');
+  });
+
+  test('with no joined games it still finds games I host', async () => {
+    queue({ data: [], error: null });
+    const games = queue({ data: [], error: null });
+    expect(await getMyGames(now)).toEqual([]);
+    expect(games.or).toHaveBeenCalledWith('host_id.eq.me');
+  });
+
+  test('nobody signed in has no games, and either request failing throws', async () => {
+    jest.mocked(getUserId).mockResolvedValueOnce(null);
+    expect(await getMyGames(now)).toEqual([]);
+    expect(from).not.toHaveBeenCalled();
+
+    queue({ data: null, error: { message: 'Network request failed' } });
+    await expect(getMyGames(now)).rejects.toThrow('Network request failed');
+
+    queue({ data: [], error: null });
+    queue({ data: null, error: { message: 'JWT expired' } });
+    await expect(getMyGames(now)).rejects.toThrow('JWT expired');
   });
 });

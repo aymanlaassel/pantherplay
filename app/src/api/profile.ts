@@ -2,16 +2,20 @@
 // For now the time is saved on the phone, so reopening the app still skips onboarding.
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
+import { getUserId } from '@/lib/auth';
 import { endsAt } from '@/lib/format-time';
 import { supabase } from '@/lib/supabase';
 import { ME } from '@/mock/people';
 
 import { delay } from './delay';
-import { PROFILE_COLUMNS, toProfile, type ProfileRow } from './rows';
-import type { Profile } from './types';
+import { toGames } from './games';
+import { GAME_COLUMNS, PROFILE_COLUMNS, toProfile, type GameRow, type ProfileRow } from './rows';
+import type { Game, Profile } from './types';
 
 // Postgres's code for text that isn't a valid id, like a mistyped link.
 const INVALID_ID = '22P02';
+// The longest a game can last (2 hours), so a game that started this long ago has surely ended.
+const LONGEST_GAME_MS = 120 * 60_000;
 
 const ONBOARDING_KEY = 'mock:onboarding_completed_at';
 
@@ -54,4 +58,31 @@ export async function getGamesPlayed(userId: string, now: Date = new Date()): Pr
   if (error) throw new Error(error.message);
   // The database can only filter by start, so drop games still being played.
   return (data as unknown as PlayedRow[]).filter(({ game }) => new Date(endsAt(game.starts_at, game.duration_minutes)) <= now).length;
+}
+
+// The signed-in user's games played (see getGamesPlayed). 0 when nobody is signed in.
+export async function getMyGamesPlayed(): Promise<number> {
+  const me = await getUserId();
+  return me ? getGamesPlayed(me) : 0;
+}
+
+// My Games: games I host or joined that haven't ended, soonest first. Cancelled games are left out.
+export async function getMyGames(now: Date = new Date()): Promise<Game[]> {
+  const me = await getUserId();
+  if (!me) return [];
+  const { data: mine, error: mineError } = await supabase.from('game_players').select('game_id').eq('user_id', me).eq('status', 'joined');
+  if (mineError) throw new Error(mineError.message);
+  const ids = (mine as { game_id: string }[]).map((row) => row.game_id);
+  // Ids come from the database, so they are safe to put in the filter.
+  const joined = ids.length > 0 ? `,id.in.(${ids.join(',')})` : '';
+  const { data, error } = await supabase
+    .from('games')
+    .select(GAME_COLUMNS)
+    .or(`host_id.eq.${me}${joined}`)
+    .neq('status', 'cancelled')
+    .gt('starts_at', new Date(now.getTime() - LONGEST_GAME_MS).toISOString())
+    .order('starts_at');
+  if (error) throw new Error(error.message);
+  const games = await toGames(data as unknown as GameRow[]);
+  return games.filter((game) => new Date(endsAt(game.startsAt, game.durationMinutes)) > now);
 }

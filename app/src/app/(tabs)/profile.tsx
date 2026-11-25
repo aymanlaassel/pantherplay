@@ -9,7 +9,7 @@ import { colors, space, typography } from '@/theme';
 export default function ProfileScreen() {
   const { data, status, retry } = useProfile();
 
-  if (status === 'ready' && data) return <ProfileContent profile={data.profile} nextGame={data.nextGame} />;
+  if (status === 'ready' && data) return <ProfileContent profile={data.profile} gamesPlayed={data.gamesPlayed} myGames={data.myGames} />;
 
   return (
     <View style={styles.center}>

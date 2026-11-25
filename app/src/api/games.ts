@@ -31,7 +31,8 @@ async function countHostGames(hostIds: string[]): Promise<Map<string, number>> {
   return counts;
 }
 
-async function toGames(rows: GameRow[]): Promise<Game[]> {
+// Rows from a GAME_COLUMNS select, as screens get them: counted, with my place in each.
+export async function toGames(rows: GameRow[]): Promise<Game[]> {
   const records = rows.map(toGameRecord);
   const [me, hostGames] = await Promise.all([getUserId(), countHostGames(records.map((r) => r.host.id))]);
   return records.map((record) => withCounts(record, me, hostGames));

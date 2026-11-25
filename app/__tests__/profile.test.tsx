@@ -1,7 +1,6 @@
 import { router } from 'expo-router';
 import { fireEvent, render, screen } from '@testing-library/react-native';
 
-import * as gamesApi from '@/api/games';
 import * as profileApi from '@/api/profile';
 import type { Game, Profile } from '@/api/types';
 import ProfileScreen from '@/app/(tabs)/profile';
@@ -10,7 +9,6 @@ import { ProfileContent } from '@/features/profile/profile-content';
 import { signOut } from '@/lib/auth';
 import { endsAt, formatTimeRange } from '@/lib/format-time';
 import { mockGames, resetMockGames } from '@/mock/games';
-import { ME } from '@/mock/people';
 
 jest.mock('expo-router', () => ({
   router: { push: jest.fn(), back: jest.fn() },
@@ -26,7 +24,6 @@ jest.mock('react-native-safe-area-context', () => require('react-native-safe-are
 
 const PROFILE: Profile = { id: 'u1', fullName: 'Maria Gonzalez', avatarUrl: null, campus: 'MMC' };
 const inHours = (h: number) => new Date(Date.now() + h * 3_600_000).toISOString();
-const me = (status: 'joined' | 'waitlisted') => ({ profile: ME, status, joinedAt: inHours(-1) });
 
 // A game from the mock set, moved to a time relative to now so the tests never depend on the clock.
 const gameAt = (id: string, hours: number, over: Partial<Game> = {}): Game => ({
@@ -43,6 +40,8 @@ const gameAt = (id: string, hours: number, over: Partial<Game> = {}): Game => ({
 
 beforeEach(() => {
   resetMockGames();
+  jest.spyOn(profileApi, 'getMyGamesPlayed').mockResolvedValue(4);
+  jest.spyOn(profileApi, 'getMyGames').mockResolvedValue([]);
   jest.mocked(router.push).mockClear();
   jest.mocked(signOut).mockClear();
 });
@@ -58,23 +57,18 @@ describe('loading through src/api/', () => {
     expect(screen.getByText('MG')).toBeTruthy();
   });
 
-  test('the scheduled game is my earliest joined game, on either campus, that has not ended', async () => {
-    const base = mockGames()[0];
-    resetMockGames([
-      { ...base, id: 'later', startsAt: inHours(5), players: [me('joined')] },
-      { ...base, id: 'ended', startsAt: inHours(-3), durationMinutes: 60, players: [me('joined')] },
-      { ...base, id: 'waitlist', startsAt: inHours(1), players: [me('waitlisted')] },
-      { ...base, id: 'not-mine', startsAt: inHours(1), players: [] },
-      { ...base, id: 'bbc', startsAt: inHours(2), location: { ...base.location, campus: 'BBC', name: 'BBC Field' }, players: [me('joined')] },
-    ]);
+  test('shows games played and My Games from the API', async () => {
+    jest.spyOn(profileApi, 'getMyGames').mockResolvedValue([gameAt('a', 2), gameAt('b', 5, { isHost: true, location: { ...mockGames()[0].location, name: 'BBC Field', campus: 'BBC' } })]);
     await render(<ProfileScreen />);
+    expect(screen.getByText('4')).toBeTruthy();
+    expect(screen.getByText('Games played')).toBeTruthy();
     expect(screen.getByText('BBC Field · BBC')).toBeTruthy();
+    expect(screen.getByText('Hosting')).toBeTruthy();
   });
 
-  test('with no joined games it says so instead of showing a fake game', async () => {
-    resetMockGames([]);
+  test('with no upcoming games it says so instead of showing a fake game', async () => {
     await render(<ProfileScreen />);
-    expect(screen.getByText('No games scheduled. Join one from Discover.')).toBeTruthy();
+    expect(screen.getByText('No games coming up. Join one from Discover.')).toBeTruthy();
     expect(screen.queryByText(BADGE_STATUS_LABEL.joined)).toBeNull();
   });
 
@@ -86,7 +80,8 @@ describe('loading through src/api/', () => {
 
   test.each([
     ['the profile', () => jest.spyOn(profileApi, 'getProfile').mockRejectedValueOnce(new Error('offline'))],
-    ['the games', () => jest.spyOn(gamesApi, 'getGames').mockRejectedValueOnce(new Error('offline'))],
+    ['My Games', () => jest.spyOn(profileApi, 'getMyGames').mockRejectedValueOnce(new Error('offline'))],
+    ['games played', () => jest.spyOn(profileApi, 'getMyGamesPlayed').mockRejectedValueOnce(new Error('offline'))],
   ])('shows an error when %s fail to load, and Try again recovers', async (_what, fail) => {
     jest.spyOn(profileApi, 'getProfile').mockResolvedValue(PROFILE);
     fail();
@@ -100,9 +95,20 @@ describe('loading through src/api/', () => {
 });
 
 describe('ProfileContent', () => {
+  test('lists My Games in order, and tapping one opens Game detail', async () => {
+    const games = [gameAt('first', 1), gameAt('second', 30)];
+    await render(<ProfileContent profile={PROFILE} gamesPlayed={1} myGames={games} />);
+    expect(screen.getByText('Game played')).toBeTruthy();
+    const cards = screen.getAllByRole('button').filter((b) => /^Soccer|^Basketball|^Volleyball|^Tennis|^Pickleball|^Flag/.test(b.props.accessibilityLabel ?? ''));
+    expect(cards).toHaveLength(2);
+    await fireEvent.press(cards[1]);
+    expect(router.push).toHaveBeenCalledWith('/game/second');
+  });
+
+
   test('shows the game time from real timestamps, with Today for a game today', async () => {
     const game = gameAt('g', 0.1);
-    await render(<ProfileContent profile={PROFILE} nextGame={game} />);
+    await render(<ProfileContent profile={PROFILE} gamesPlayed={0} myGames={[game]} />);
     const range = formatTimeRange(game.startsAt, endsAt(game.startsAt, game.durationMinutes));
     const today = new Date(game.startsAt).toDateString() === new Date().toDateString();
     expect(screen.getByText(today ? `Today, ${range}` : new RegExp(`, ${range}$`))).toBeTruthy();
@@ -112,25 +118,25 @@ describe('ProfileContent', () => {
 
   test('a game on another day shows its date instead of Today', async () => {
     const game = gameAt('g', 72);
-    await render(<ProfileContent profile={PROFILE} nextGame={game} />);
+    await render(<ProfileContent profile={PROFILE} gamesPlayed={0} myGames={[game]} />);
     expect(screen.queryByText(/^Today,/)).toBeNull();
   });
 
   test('username, win/loss record and reliability stay hidden until the database has them', async () => {
-    await render(<ProfileContent profile={PROFILE} nextGame={null} />);
+    await render(<ProfileContent profile={PROFILE} gamesPlayed={0} myGames={[]} />);
     expect(screen.queryByText(/^@/)).toBeNull();
     expect(screen.queryByText('WIN / LOSS RECORD')).toBeNull();
     expect(screen.queryByText('RELIABILITY')).toBeNull();
   });
 
   test('the gear opens Settings', async () => {
-    await render(<ProfileContent profile={PROFILE} nextGame={null} />);
+    await render(<ProfileContent profile={PROFILE} gamesPlayed={0} myGames={[]} />);
     await fireEvent.press(screen.getByRole('button', { name: 'Settings' }));
     expect(router.push).toHaveBeenCalledWith('/settings');
   });
 
   test('a null avatar shows initials inside the split ring', async () => {
-    await render(<ProfileContent profile={PROFILE} nextGame={null} />);
+    await render(<ProfileContent profile={PROFILE} gamesPlayed={0} myGames={[]} />);
     expect(screen.getByText('MG')).toBeTruthy();
     expect(screen.queryByTestId('avatar-photo')).toBeNull();
     expect(screen.getByTestId('avatar-ring')).toBeTruthy();
@@ -138,32 +144,32 @@ describe('ProfileContent', () => {
 
   test('a user with a photo shows the image instead of initials', async () => {
     const avatarUrl = 'https://example.com/maria.jpg';
-    await render(<ProfileContent profile={{ ...PROFILE, avatarUrl }} nextGame={null} />);
+    await render(<ProfileContent profile={{ ...PROFILE, avatarUrl }} gamesPlayed={0} myGames={[]} />);
     expect(screen.getByTestId('avatar-photo').props.source).toEqual([expect.objectContaining({ uri: avatarUrl })]);
     expect(screen.queryByText('MG')).toBeNull();
   });
 
   test('a very long name renders with limits on its lines', async () => {
     const fullName = 'Maximiliano Alejandro Bartholomew Fernández-Castellanos de la Santísima Trinidad';
-    await render(<ProfileContent profile={{ ...PROFILE, fullName }} nextGame={null} />);
+    await render(<ProfileContent profile={{ ...PROFILE, fullName }} gamesPlayed={0} myGames={[]} />);
     expect(screen.getByText('Greetings Maximiliano!').props.numberOfLines).toBe(2);
     expect(screen.getByText(fullName).props.numberOfLines).toBe(2);
     expect(screen.getByText('MA')).toBeTruthy();
   });
 
   test.each(['', '   '])('an empty name (%j) does not crash: "?" initials and a default greeting', async (fullName) => {
-    await render(<ProfileContent profile={{ ...PROFILE, fullName }} nextGame={null} />);
+    await render(<ProfileContent profile={{ ...PROFILE, fullName }} gamesPlayed={0} myGames={[]} />);
     expect(screen.getByText('?')).toBeTruthy();
     expect(screen.getByText('Greetings Panther!')).toBeTruthy();
   });
 
   test('there is no dark-mode button', async () => {
-    await render(<ProfileContent profile={PROFILE} nextGame={null} />);
+    await render(<ProfileContent profile={PROFILE} gamesPlayed={0} myGames={[]} />);
     expect(screen.queryByLabelText(/dark mode/i)).toBeNull();
   });
 
   test('the temporary Sign out button signs out (the auth gate then shows Welcome)', async () => {
-    await render(<ProfileContent profile={PROFILE} nextGame={null} />);
+    await render(<ProfileContent profile={PROFILE} gamesPlayed={0} myGames={[]} />);
     fireEvent.press(screen.getByRole('button', { name: 'Sign out' }));
     expect(signOut).toHaveBeenCalledTimes(1);
   });

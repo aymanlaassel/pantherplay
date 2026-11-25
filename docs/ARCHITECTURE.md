@@ -176,10 +176,10 @@ flowchart TD
   Settings -. "later ticket; row is inert" .-> NotifPrefs["Notification preferences<br/>(not implemented)"]
   Notifications -- "tap a notification" --> Detail
   Detail -- "tap the host or a player" --> Player["Player profile"]
-  MyGames["My Games<br/>(pending — no tab slot yet)"] -.-> Detail
+  Profile -- "tap one of My Games" --> Detail
 
   classDef pending stroke-dasharray: 5 5,color:#5A6B7D
-  class NotifPrefs,MyGames,Campus,Sports,Photo,Notif pending
+  class NotifPrefs,Campus,Sports,Photo,Notif pending
 ```
 
 **What each screen does:**
@@ -194,7 +194,7 @@ flowchart TD
 | **Map** | A native map (`react-native-maps`, see [ADR 0004](./adr/0004-map-tab.md)) with a pin for each game at the chosen campus (MMC/BBC), plus a bottom sheet listing them by start time. It loads the same `getGames(campus)` as Discover, so both tabs show the same games, with a spinner while loading and an error with Try again. Tap a game once to highlight it and center the map; tap again to open Game detail. |
 | **＋** | The center tab button. Opens Create game. |
 | **Social** | The fourth tab: a Chats list (All, Groups and Unread filters) and a Friends list, with search across both. See the [scope note](./social-page-scope.md). It's a skeleton on mock data for now: real chat and friend requests aren't built yet. |
-| **Profile** | Your photo or initials, your name, and your next joined game, plus the gear icon that opens Settings. Loads through `getProfile()` and `getGames()` in `src/api/`, with a spinner and an error with Try again. Username, win/loss record and reliability are hidden until those are decided; Edit profile doesn't do anything yet. |
+| **Profile** | Your photo or initials, your name, games played, and My Games (upcoming games you host or joined, soonest first; tap one to open it), plus the gear icon that opens Settings. Loads through `getProfile()`, `getMyGamesPlayed()` and `getMyGames()` in `src/api/profile.ts`, with a spinner and an error with Try again. Felipe decided on Nov 25 that My Games lives here and there is no reliability score; username and win/loss stay hidden. Edit profile doesn't do anything yet. |
 | **Game detail** | One game: when, where, who's going, spots left, and the Join button. It opens on top of the tabs with a back button. The game comes from `getGame(id)`; spots filled are counted from its players, and "Hosted N games" under the host is counted from the host's games (cancelled ones don't count). Join calls `joinGame(id)` and shows Joined or Waitlisted; once you're in, the button becomes Leave (`leaveGame(id)`). Waitlisted players see their place in line ("2nd on the waitlist"), counted from when each waitlisted player joined. One More button opens a bottom sheet: the host gets host options (Cancel game, which asks to confirm and then calls `cancelGame(id)`); everyone else gets the Report sheet (report the game or the host, or block the host). A cancelled game can't be joined. Has loading and error states with Try again. The game and Join and Leave all go to the database. |
 | **Player profile** | Another player's photo or initials, name, home campus and games played (joined games that have ended, not cancelled ones). Opened by tapping the host or a player on Game detail. Loads through `getPlayer(id)` and `getGamesPlayed(id)` in `src/api/profile.ts`; a missing or deleted player shows "This player isn't available". Its More button opens the Report sheet for that player. |
 | **Report sheet** | A bottom sheet (`src/features/safety/report-sheet.tsx`) to report a game, player or chat message with a reason and optional details, or block a player after confirming. Opened from More on Game detail and Player profile. Calls `report()` and `blockUser()` in `src/api/safety.ts`, mock data until W8-01 adds the tables. |
@@ -204,7 +204,6 @@ flowchart TD
 | **Blocked players** | The players you blocked, each with Unblock, and "You haven't blocked anyone" when there are none. Loads through `getBlockedUsers()` and `unblockUser(id)` in `src/api/safety.ts`, mock data until the blocks table lands (W8-01). Blocking itself happens from the Report sheet. |
 | **Delete account** | Warning and deleted-data list, exact DELETE confirmation, and Cancel. The enabled Delete action only goes back; no data is deleted. |
 | **Notification preferences** | Designed, but implementation is a later ticket. Settings does not navigate here yet. |
-| **My Games** | Games you've joined or host. Pending: it has no tab slot yet. |
 
 ---
 

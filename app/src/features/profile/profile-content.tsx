@@ -1,5 +1,5 @@
 // The Profile tab's sections. Takes the user as a prop so tests can pass hostile data.
-// Username, win/loss record and reliability are hidden until the database has them (open decisions).
+// Shows games played; username, win/loss record and reliability stay hidden (Felipe, Nov 25).
 import { router } from 'expo-router';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
@@ -23,10 +23,11 @@ const firstName = (fullName: string) => fullName.trim().split(/\s+/)[0] || 'Pant
 
 type ProfileContentProps = {
   profile: Profile;
-  nextGame: Game | null; // the earliest game I've joined that hasn't ended
+  gamesPlayed: number;
+  myGames: Game[]; // games I host or joined that haven't ended, soonest first
 };
 
-export function ProfileContent({ profile, nextGame }: ProfileContentProps) {
+export function ProfileContent({ profile, gamesPlayed, myGames }: ProfileContentProps) {
   return (
     <ScrollView style={styles.container} contentContainerStyle={styles.content}>
       <View style={styles.header}>
@@ -63,30 +64,20 @@ export function ProfileContent({ profile, nextGame }: ProfileContentProps) {
         </View>
       </View>
 
-      <Text style={styles.sectionTitle}>GAMES SCHEDULED</Text>
-      {nextGame ? (
-        <View style={styles.gameCard}>
-          <View style={styles.gameAccent} />
-          <View style={styles.gameBody}>
-            <Text style={styles.gameTitle}>{nextGame.sport.name}</Text>
-            <View style={styles.detailRow}>
-              <Icon name="pin" color={colors.icon.active} size={ICON_SIZE} />
-              <Text style={styles.detailSmall}>{`${nextGame.location.name} · ${nextGame.location.campus}`}</Text>
-            </View>
-            <View style={styles.detailRow}>
-              <Icon name="calendar" color={colors.icon.active} size={ICON_SIZE} />
-              <Text style={styles.detail}>
-                {`${formatDay(nextGame.startsAt)}, ${formatTimeRange(
-                  nextGame.startsAt,
-                  endsAt(nextGame.startsAt, nextGame.durationMinutes),
-                )}`}
-              </Text>
-            </View>
-            <BadgeStatus status="joined" style={styles.joinedBadge} />
-          </View>
+      <View style={styles.stat}>
+        <Text style={styles.statValue}>{gamesPlayed}</Text>
+        <Text style={styles.statLabel}>{gamesPlayed === 1 ? 'Game played' : 'Games played'}</Text>
+      </View>
+
+      <Text style={styles.sectionTitle}>MY GAMES</Text>
+      {myGames.length > 0 ? (
+        <View style={styles.gameList}>
+          {myGames.map((game) => (
+            <MyGameCard key={game.id} game={game} />
+          ))}
         </View>
       ) : (
-        <Text style={styles.noGames}>No games scheduled. Join one from Discover.</Text>
+        <Text style={styles.noGames}>No games coming up. Join one from Discover.</Text>
       )}
 
       {/* TEMPORARY: lets us test the auth gate until Settings has a real Sign out. Remove then. */}
@@ -95,7 +86,45 @@ export function ProfileContent({ profile, nextGame }: ProfileContentProps) {
   );
 }
 
+// One of My Games. Tapping it opens Game detail.
+function MyGameCard({ game }: { game: Game }) {
+  return (
+    <Pressable
+      onPress={() => router.push(`/game/${game.id}`)}
+      accessibilityRole="button"
+      accessibilityLabel={`${game.sport.name}, ${formatDay(game.startsAt)}`}
+      style={styles.gameCard}>
+      <View style={styles.gameAccent} />
+      <View style={styles.gameBody}>
+        <Text style={styles.gameTitle}>{game.sport.name}</Text>
+        <View style={styles.detailRow}>
+          <Icon name="pin" color={colors.icon.active} size={ICON_SIZE} />
+          <Text style={styles.detailSmall}>{`${game.location.name} · ${game.location.campus}`}</Text>
+        </View>
+        <View style={styles.detailRow}>
+          <Icon name="calendar" color={colors.icon.active} size={ICON_SIZE} />
+          <Text style={styles.detail}>
+            {`${formatDay(game.startsAt)}, ${formatTimeRange(game.startsAt, endsAt(game.startsAt, game.durationMinutes))}`}
+          </Text>
+        </View>
+        {game.isHost ? <Text style={styles.hosting}>Hosting</Text> : <BadgeStatus status="joined" style={styles.joinedBadge} />}
+      </View>
+    </Pressable>
+  );
+}
+
 const styles = StyleSheet.create({
+  stat: {
+    marginTop: space[20],
+    padding: space[16],
+    gap: space[4],
+    borderRadius: radius.card,
+    backgroundColor: colors.bg.surface,
+  },
+  statValue: { ...typography.Price, color: colors.text.primary },
+  statLabel: { ...typography.Label, color: colors.text.muted },
+  gameList: { gap: space[12] },
+  hosting: { ...typography.Label, color: colors.text.gold, alignSelf: 'flex-end' },
   signOut: { marginTop: space[20] },
   container: {
     flex: 1,
