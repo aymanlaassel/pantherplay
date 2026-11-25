@@ -64,7 +64,7 @@ test.each(['1', '2', '3', 'full', 'cancelled', 'soon', 'long-text'])('game %s sh
 test('the mock games cover every state', async () => {
   const games = await Promise.all(mockGames().map((game) => getGame(game.id)));
   const states = new Set(games.map((game) => gameState(game!)));
-  expect(states).toEqual(new Set(['open', 'almost-full', 'starting-soon', 'full', 'joined', 'cancelled']));
+  expect(states).toEqual(new Set(['open', 'confirmed', 'almost-full', 'starting-soon', 'full', 'joined', 'cancelled']));
 });
 
 test('a very long host name and place name still render', async () => {

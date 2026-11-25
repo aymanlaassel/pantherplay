@@ -3,10 +3,11 @@ import { StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-na
 
 import { colors, radius, space, typography } from '@/theme';
 
-export type GameBadgeStatus = 'starting-soon' | 'almost-full' | 'full' | 'joined' | 'cancelled';
+export type GameBadgeStatus = 'starting-soon' | 'confirmed' | 'almost-full' | 'full' | 'joined' | 'cancelled';
 
 export const BADGE_STATUS_LABEL: Record<GameBadgeStatus, string> = {
   'starting-soon': 'Starting soon',
+  confirmed: 'Confirmed',
   'almost-full': 'Almost full',
   full: 'Full',
   joined: 'Joined',
@@ -16,6 +17,8 @@ export const BADGE_STATUS_LABEL: Record<GameBadgeStatus, string> = {
 // One background/text pair per state, all from the theme.
 const palette: Record<GameBadgeStatus, { backgroundColor: string; color: string }> = {
   'starting-soon': { backgroundColor: colors.bg.goldSoft, color: colors.text.gold },
+  // Green like the game card's "Confirmed" label. Joined ranks above it, so the two never show together.
+  confirmed: { backgroundColor: colors.bg.success, color: colors.text.success },
   'almost-full': { backgroundColor: colors.bg.goldSoft, color: colors.text.gold },
   full: { backgroundColor: colors.bg.neutral, color: colors.text.muted },
   joined: { backgroundColor: colors.bg.success, color: colors.text.success },

@@ -14,3 +14,7 @@ export const CAMPUSES: Campus[] = ['MMC', 'BBC'];
 export const MIN_PLAYERS = 2;
 export const MAX_PLAYERS = 30;
 export const NOTES_MAX = 140;
+
+// Games can be posted up to 14 days ahead (Felipe, Nov 25; the database checks it too, W8-05).
+export const MAX_DAYS_AHEAD = 14;
+export const latestStart = (now: Date) => new Date(now.getTime() + MAX_DAYS_AHEAD * 24 * 60 * 60_000);

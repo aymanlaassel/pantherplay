@@ -12,6 +12,7 @@ import { colors, space, typography } from '@/theme';
 export const ACTION_LABEL: Record<GameState, string> = {
   open: 'Join game',
   'starting-soon': 'Join game',
+  confirmed: 'Join game',
   'almost-full': 'Join game',
   full: 'Join waitlist',
   joined: 'Leave game',

@@ -27,6 +27,14 @@ test('a game about to start is starting soon', () => {
   expect(gameState({ ...base, startsAt: '2030-01-01T11:55:00Z' }, now)).toBe('open');
 });
 
+test('confirmed ranks below cancelled, joined, full and starting soon, and above almost full', () => {
+  const confirmed = { ...base, status: 'confirmed' as const };
+  expect(gameState({ ...confirmed, spotsFilled: 7 }, now)).toBe('confirmed');
+  expect(gameState({ ...confirmed, myStatus: 'joined' }, now)).toBe('joined');
+  expect(gameState({ ...confirmed, spotsFilled: 10 }, now)).toBe('full');
+  expect(gameState({ ...confirmed, startsAt: '2030-01-01T12:05:00Z' }, now)).toBe('starting-soon');
+});
+
 test('3 or fewer spots left is almost full, otherwise open', () => {
   expect(gameState({ ...base, spotsFilled: 7 }, now)).toBe('almost-full');
   expect(gameState({ ...base, spotsFilled: 6 }, now)).toBe('open');

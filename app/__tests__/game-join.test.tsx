@@ -73,6 +73,13 @@ describe('Join and Leave', () => {
     expect(screen.getByText('8 of 10 spots filled')).toBeTruthy();
   });
 
+  test('a confirmed game shows the Confirmed badge and can still be joined', async () => {
+    mockGames().find((g) => g.id === '1')!.status = 'confirmed';
+    await open('1');
+    expect(screen.getByText('Confirmed')).toBeTruthy();
+    expect(screen.getByText('Join game')).toBeTruthy();
+  });
+
   test('a cancelled game cannot be joined', async () => {
     await open('cancelled');
     expect(screen.getByRole('button', { name: 'Game cancelled', disabled: true })).toBeTruthy();

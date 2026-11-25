@@ -4,6 +4,7 @@ import { StyleSheet, Text, View } from 'react-native';
 
 import { colors, radius, space, typography } from '@/theme';
 
+import { latestStart } from './options';
 import { dateText, timeText, withDate, withTime } from './when-parse';
 
 type WhenFieldsProps = { value: Date; onChange: (value: Date) => void; error?: string };
@@ -18,6 +19,7 @@ export function WhenFields({ value, onChange, error }: WhenFieldsProps) {
             type="date"
             aria-label="Date"
             min={dateText(new Date())}
+            max={dateText(latestStart(new Date()))}
             value={dateText(value)}
             onChange={(event) => onChange(withDate(value, event.target.value))}
             style={inputStyle}
