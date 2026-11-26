@@ -8,15 +8,12 @@ import { supabase } from '@/lib/supabase';
 import { ME } from '@/mock/people';
 
 import { delay } from './delay';
-import { toGames } from './games';
+import { notEnded, startedAfter, toGames } from './games';
 import { GAME_COLUMNS, PROFILE_COLUMNS, toProfile, type GameRow, type ProfileRow } from './rows';
 import type { Game, Profile } from './types';
 
 // Postgres's code for text that isn't a valid id, like a mistyped link.
 const INVALID_ID = '22P02';
-// The longest a game can last (2 hours), so a game that started this long ago has surely ended.
-const LONGEST_GAME_MS = 120 * 60_000;
-
 const ONBOARDING_KEY = 'mock:onboarding_completed_at';
 
 // Called when the last onboarding step is done. Stamps the current time.
@@ -80,9 +77,8 @@ export async function getMyGames(now: Date = new Date()): Promise<Game[]> {
     .select(GAME_COLUMNS)
     .or(`host_id.eq.${me}${joined}`)
     .neq('status', 'cancelled')
-    .gt('starts_at', new Date(now.getTime() - LONGEST_GAME_MS).toISOString())
+    .gt('starts_at', startedAfter(now))
     .order('starts_at');
   if (error) throw new Error(error.message);
-  const games = await toGames(data as unknown as GameRow[]);
-  return games.filter((game) => new Date(endsAt(game.startsAt, game.durationMinutes)) > now);
+  return notEnded(await toGames(data as unknown as GameRow[]), now);
 }

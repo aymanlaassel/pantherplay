@@ -21,13 +21,15 @@ function queue(result: Result) {
     then: (onDone: (r: Result) => unknown, onFail: (e: unknown) => unknown) => Promise.resolve(result).then(onDone, onFail),
     maybeSingle: jest.fn(async () => result),
   };
-  for (const name of ['select', 'eq', 'neq', 'order', 'in']) query[name] = jest.fn(() => query);
+  for (const name of ['select', 'eq', 'neq', 'gt', 'order', 'in']) query[name] = jest.fn(() => query);
   from.mockReturnValueOnce(query);
-  return query as Record<'select' | 'eq' | 'neq' | 'order' | 'in' | 'maybeSingle', jest.Mock>;
+  return query as Record<'select' | 'eq' | 'neq' | 'gt' | 'order' | 'in' | 'maybeSingle', jest.Mock>;
 }
 
 const profile = (id: string, name: string): ProfileRow => ({ id, display_name: name, avatar_url: null, campus: 'MMC' });
 const AT = '2026-11-25T23:00:00+00:00';
+// An hour before AT, so the rows below are upcoming.
+const NOW = new Date('2026-11-25T22:00:00Z');
 const LOCATION: LocationRow = { id: 'loc-1', campus: 'MMC', name: 'Soccer Field 2', photo_url: null, latitude: 25.7596, longitude: -80.3794 };
 const gameRow = (id: string, over: Partial<GameRow> = {}): GameRow => ({
   id,
@@ -56,19 +58,36 @@ beforeEach(() => {
 });
 
 describe('getGames', () => {
-  test('asks for the campus, without cancelled games, soonest first', async () => {
+  const minutesFromNow = (minutes: number) => new Date(NOW.getTime() + minutes * 60_000).toISOString();
+
+  test('asks for the campus, without cancelled or completed games, soonest first', async () => {
     const games = queue({ data: [], error: null });
-    await getGames('BBC');
+    await getGames('BBC', NOW);
     expect(from).toHaveBeenCalledWith('games');
     expect(games.eq).toHaveBeenCalledWith('location.campus', 'BBC');
     expect(games.neq).toHaveBeenCalledWith('status', 'cancelled');
+    expect(games.neq).toHaveBeenCalledWith('status', 'completed');
+    expect(games.gt).toHaveBeenCalledWith('starts_at', minutesFromNow(-120));
     expect(games.order).toHaveBeenCalledWith('starts_at');
+  });
+
+  test('leaves out games that ended, and keeps one still being played', async () => {
+    queue({
+      data: [
+        gameRow('ended', { starts_at: minutesFromNow(-100), duration_minutes: 90 }),
+        gameRow('playing', { starts_at: minutesFromNow(-30), duration_minutes: 90 }),
+        gameRow('upcoming', { starts_at: minutesFromNow(60) }),
+      ],
+      error: null,
+    });
+    queue({ data: [], error: null });
+    expect((await getGames('MMC', NOW)).map((g) => g.id)).toEqual(['playing', 'upcoming']);
   });
 
   test('turns each row into the contract, in camelCase', async () => {
     queue({ data: [gameRow('g1', { notes: 'Bring water' })], error: null });
     queue({ data: [{ host_id: 'host-1' }], error: null });
-    const [game] = await getGames('MMC');
+    const [game] = await getGames('MMC', NOW);
     expect(game).toMatchObject({
       id: 'g1',
       host: { id: 'host-1', fullName: 'Alex Rivera', avatarUrl: null, campus: 'MMC' },
@@ -87,7 +106,7 @@ describe('getGames', () => {
   test('counts spots from joined players only, and finds my place by my user id', async () => {
     queue({ data: [gameRow('g1')], error: null });
     queue({ data: [], error: null });
-    expect((await getGames('MMC'))[0]).toMatchObject({ spotsFilled: 2, myStatus: 'joined' });
+    expect((await getGames('MMC', NOW))[0]).toMatchObject({ spotsFilled: 2, myStatus: 'joined' });
   });
 
   test('my place is waitlisted, or empty after I left or when nobody is signed in', async () => {
@@ -96,18 +115,18 @@ describe('getGames', () => {
     rows[1].players[1].status = 'left';
     queue({ data: rows, error: null });
     queue({ data: [], error: null });
-    expect((await getGames('MMC')).map((g) => g.myStatus)).toEqual(['waitlisted', null, 'joined']);
+    expect((await getGames('MMC', NOW)).map((g) => g.myStatus)).toEqual(['waitlisted', null, 'joined']);
 
     jest.mocked(getUserId).mockResolvedValueOnce(null);
     queue({ data: [gameRow('g1')], error: null });
     queue({ data: [], error: null });
-    expect((await getGames('MMC'))[0].myStatus).toBeNull();
+    expect((await getGames('MMC', NOW))[0].myStatus).toBeNull();
   });
 
   test("counts each host's games in one request, leaving out cancelled ones", async () => {
     queue({ data: [gameRow('g1'), gameRow('g2'), gameRow('g3', { host: profile('host-2', 'Maya T.') })], error: null });
     const counts = queue({ data: [{ host_id: 'host-1' }, { host_id: 'host-1' }, { host_id: 'host-1' }, { host_id: 'host-2' }], error: null });
-    const games = await getGames('MMC');
+    const games = await getGames('MMC', NOW);
     expect(counts.in).toHaveBeenCalledWith('host_id', ['host-1', 'host-2']);
     expect(counts.neq).toHaveBeenCalledWith('status', 'cancelled');
     expect(games.map((g) => g.hostGamesCount)).toEqual([3, 3, 1]);
@@ -115,17 +134,17 @@ describe('getGames', () => {
 
   test('an empty campus is an empty list, with no second request', async () => {
     queue({ data: [], error: null });
-    expect(await getGames('MMC')).toEqual([]);
+    expect(await getGames('MMC', NOW)).toEqual([]);
     expect(from).toHaveBeenCalledTimes(1);
   });
 
   test('throws when either request fails, so the screen shows its error state', async () => {
     queue({ data: null, error: { message: 'Network request failed' } });
-    await expect(getGames('MMC')).rejects.toThrow('Network request failed');
+    await expect(getGames('MMC', NOW)).rejects.toThrow('Network request failed');
 
     queue({ data: [gameRow('g1')], error: null });
     queue({ data: null, error: { message: 'JWT expired' } });
-    await expect(getGames('MMC')).rejects.toThrow('JWT expired');
+    await expect(getGames('MMC', NOW)).rejects.toThrow('JWT expired');
   });
 });
 
@@ -222,7 +241,7 @@ describe('isHost', () => {
   test('is true only for the game I host, and false when nobody is signed in', async () => {
     queue({ data: [gameRow('g1'), gameRow('g2', { host: profile('me', 'Panther Student') })], error: null });
     queue({ data: [], error: null });
-    expect((await getGames('MMC')).map((g) => g.isHost)).toEqual([false, true]);
+    expect((await getGames('MMC', NOW)).map((g) => g.isHost)).toEqual([false, true]);
 
     jest.mocked(getUserId).mockResolvedValueOnce(null);
     queue({ data: gameRow('g2', { host: profile('me', 'Panther Student') }), error: null });

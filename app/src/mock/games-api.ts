@@ -43,7 +43,8 @@ function find(id: string): GameRecord {
 export async function getGames(campus: Campus): Promise<Game[]> {
   await delay();
   return mockGames()
-    .filter((g) => g.location.campus === campus && g.status !== 'cancelled')
+    // No time filter: mock games are at fixed times today, so screen tests would lose them at night.
+    .filter((g) => g.location.campus === campus && g.status !== 'cancelled' && g.status !== 'completed')
     .sort((a, b) => a.startsAt.localeCompare(b.startsAt))
     .map(withCounts);
 }

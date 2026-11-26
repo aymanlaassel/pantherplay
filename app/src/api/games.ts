@@ -2,6 +2,7 @@
 // database's functions, which decide capacity; the reads use RLS-protected selects.
 import type { Campus } from '@/components/campus-toggle';
 import { getUserId } from '@/lib/auth';
+import { endsAt } from '@/lib/format-time';
 import { supabase } from '@/lib/supabase';
 
 import { myPlace } from './my-place';
@@ -10,6 +11,12 @@ import type { Game, GameRecord, JoinResult, NewGame } from './types';
 
 // Postgres's code for text that isn't a valid id, like a mistyped link.
 const INVALID_ID = '22P02';
+// The longest a game can last (2 hours), so a game that started this long ago has surely ended.
+const LONGEST_GAME_MS = 120 * 60_000;
+
+// The database can only filter by start: ask for games that started after this, then drop the ended ones with notEnded.
+export const startedAfter = (now: Date) => new Date(now.getTime() - LONGEST_GAME_MS).toISOString();
+export const notEnded = (games: Game[], now: Date) => games.filter((game) => new Date(endsAt(game.startsAt, game.durationMinutes)) > now);
 
 // Spots filled and my place are counted from the players, not stored.
 function withCounts(record: GameRecord, me: string | null, hostGames: Map<string, number>): Game {
@@ -38,16 +45,18 @@ export async function toGames(rows: GameRow[]): Promise<Game[]> {
   return records.map((record) => withCounts(record, me, hostGames));
 }
 
-// Games on a campus, soonest first. Cancelled games are not listed.
-export async function getGames(campus: Campus): Promise<Game[]> {
+// Games on a campus that haven't ended, soonest first. Cancelled and completed games are not listed.
+export async function getGames(campus: Campus, now: Date = new Date()): Promise<Game[]> {
   const { data, error } = await supabase
     .from('games')
     .select(GAME_COLUMNS)
     .eq('location.campus', campus)
     .neq('status', 'cancelled')
+    .neq('status', 'completed')
+    .gt('starts_at', startedAfter(now))
     .order('starts_at');
   if (error) throw new Error(error.message);
-  return toGames(data as unknown as GameRow[]);
+  return notEnded(await toGames(data as unknown as GameRow[]), now);
 }
 
 // One game, or null if no game has this id. A cancelled game is still returned, so its page can say so.
