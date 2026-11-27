@@ -25,7 +25,8 @@ test('a game posted while Discover is in the background shows when the tab is fo
   expect(screen.queryByText('Tennis')).toBeNull();
 
   await act(async () => {
-    mockEffects[mockEffects.length - 1]();
+    // Fire every focus effect, as a real focus does (the bell registers one too now).
+    for (const effect of [...mockEffects]) effect();
   });
   expect(screen.getByText('Tennis')).toBeTruthy();
 });

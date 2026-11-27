@@ -1,15 +1,22 @@
-// Mock until Supabase is wired in (W3-08).
+// Mock until W8-04 lands; then these read and update the Supabase notifications table.
 import type { AppNotification } from '@/components/notification-row';
-import { MOCK_NOTIFICATIONS } from '@/mock/notifications';
+import { mockNotifications } from '@/mock/notifications';
 
 import { delay } from './delay';
 
 // The signed-in user's notifications, newest first.
 export async function getNotifications(): Promise<AppNotification[]> {
   await delay();
-  return MOCK_NOTIFICATIONS;
+  // A copy, so marking read later doesn't move rows on a screen that already shows them.
+  return [...mockNotifications()];
 }
 
 export async function hasUnreadNotifications(): Promise<boolean> {
-  return MOCK_NOTIFICATIONS.some((n) => n.unread);
+  return mockNotifications().some((n) => n.unread);
+}
+
+// Sets read_at on every unread row, so the bell clears.
+export async function markAllRead(): Promise<void> {
+  const list = mockNotifications();
+  list.splice(0, list.length, ...list.map((n) => ({ ...n, unread: false })));
 }

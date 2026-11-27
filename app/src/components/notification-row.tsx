@@ -39,11 +39,20 @@ export type AppNotification = {
   unread: boolean;
   // The person it is about, for the avatar leading.
   person?: string;
+  // The game it is about (notifications.game_id); tapping the row opens it.
+  gameId?: string;
 };
 
-export function NotificationRow({ notification: n }: { notification: AppNotification }) {
+type NotificationRowProps = { notification: AppNotification; onPress?: () => void };
+
+export function NotificationRow({ notification: n, onPress }: NotificationRowProps) {
   return (
-    <View testID={`notification-${n.id}`} style={styles.row}>
+    <Pressable
+      testID={`notification-${n.id}`}
+      onPress={onPress}
+      disabled={!onPress}
+      accessibilityRole={onPress ? 'button' : undefined}
+      style={styles.row}>
       <NotificationLeading kind={NOTIFICATION_LEADING[n.type]} name={n.person} />
       <View style={styles.text}>
         <Text style={styles.title}>{n.title}</Text>
@@ -61,7 +70,7 @@ export function NotificationRow({ notification: n }: { notification: AppNotifica
           <Image testID="unread-dot" source={require('@/assets/images/icons/unread-dot.svg')} style={styles.dot} />
         )}
       </View>
-    </View>
+    </Pressable>
   );
 }
 

@@ -1,9 +1,11 @@
-// Mock list for the Notifications skeleton; replaced by real data from Supabase later.
+// Mock rows shaped like the W8-04 notifications table (game_id -> gameId, read_at null -> unread).
+// Behind src/api/notifications.ts until W8-04 lands. Game ids point at src/mock/games.
 import type { AppNotification } from '@/components/notification-row';
 
 export const MOCK_NOTIFICATIONS: AppNotification[] = [
   {
     id: 'waitlist',
+    gameId: '1',
     type: 'waitlist-opened',
     title: 'A spot opened in 5v5 Soccer',
     body: "You're off the waitlist. Claim it before 6:30 PM.",
@@ -12,6 +14,7 @@ export const MOCK_NOTIFICATIONS: AppNotification[] = [
   },
   {
     id: 'joined',
+    gameId: '3',
     type: 'player-joined',
     title: 'Marcus joined your game',
     body: '7 of 10 spots filled in Volleyball at BBC.',
@@ -21,6 +24,7 @@ export const MOCK_NOTIFICATIONS: AppNotification[] = [
   },
   {
     id: 'starting',
+    gameId: 'soon',
     type: 'starting-soon',
     title: '5v5 Soccer starts in 1 hour',
     body: 'Panther Field · MMC',
@@ -29,6 +33,7 @@ export const MOCK_NOTIFICATIONS: AppNotification[] = [
   },
   {
     id: 'changed',
+    gameId: 'long-text',
     type: 'game-changed',
     title: 'Sunday Morning Ultimate Frisbee Run at Panther Field moved',
     body:
@@ -38,6 +43,7 @@ export const MOCK_NOTIFICATIONS: AppNotification[] = [
   },
   {
     id: 'cancelled',
+    gameId: 'cancelled',
     type: 'game-cancelled',
     title: '3v3 Basketball was cancelled',
     body: 'Not enough players joined before the cutoff.',
@@ -46,6 +52,7 @@ export const MOCK_NOTIFICATIONS: AppNotification[] = [
   },
   {
     id: 'confirmed',
+    gameId: '2',
     type: 'game-confirmed',
     title: 'Pickleball is confirmed',
     body: '4 players in. See you at 8:00 PM.',
@@ -54,6 +61,7 @@ export const MOCK_NOTIFICATIONS: AppNotification[] = [
   },
   {
     id: 'left',
+    gameId: 'full',
     type: 'player-left-late',
     title: 'Maximiliano Alejandro Fernández-Castellanos left your game',
     body: '5v5 Soccer is down to 8 of 10 spots, 2 hours before kickoff.',
@@ -63,6 +71,7 @@ export const MOCK_NOTIFICATIONS: AppNotification[] = [
   },
   {
     id: 'friend',
+    gameId: '2',
     type: 'friend-playing',
     title: 'Daniela is playing Thursday',
     body: '3v3 Basketball at the Rec Center, 2 spots left.',
@@ -73,6 +82,7 @@ export const MOCK_NOTIFICATIONS: AppNotification[] = [
   },
   {
     id: 'rate',
+    gameId: '1',
     type: 'rate-host',
     title: 'How did it go?',
     body: 'Rate Alex R. as a host for 5v5 Soccer.',
@@ -80,3 +90,10 @@ export const MOCK_NOTIFICATIONS: AppNotification[] = [
     unread: false,
   },
 ];
+
+const notifications = [...MOCK_NOTIFICATIONS];
+
+export const mockNotifications = () => notifications;
+
+// Back to the starting set (all unread state restored), like resetMockGames.
+export const resetMockNotifications = () => notifications.splice(0, notifications.length, ...MOCK_NOTIFICATIONS);
