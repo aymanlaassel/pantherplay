@@ -108,9 +108,9 @@ Supabase never shows an error when it rejects a return address: it just sends th
 - [ ] Set **Site URL** to something real instead of `localhost:3000`.
 - [ ] Check Apple's App Store rules on third-party sign-in (they can require Sign in with Apple; school logins may be exempt).
 
-## Open decision: students only
+## Decided: no students-only limit
 
-Whether to limit sign-in to `@fiu.edu` accounts while we're on Google is **not decided** (ask Felipe), and nothing restricts it today. If it's decided, the restriction belongs on the server, not in the app:
+Sign-in is **not** limited to `@fiu.edu` accounts, and nothing restricts it. If that ever changes, the restriction belongs on the server, not in the app:
 
 - A Supabase **Before User Created** auth hook (**Authentication → Auth Hooks**) that rejects emails outside `@fiu.edu`.
 - Google's `hd=fiu.edu` sign-in hint only pre-filters the account picker; it can be bypassed, so it isn't enforcement on its own.
