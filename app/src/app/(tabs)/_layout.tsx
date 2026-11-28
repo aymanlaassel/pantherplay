@@ -1,34 +1,61 @@
 import { Redirect, Tabs } from 'expo-router';
 import { useEffect, useState } from 'react';
+import { StyleSheet, Text, View } from 'react-native';
 
-import { hasFinishedOnboarding } from '@/api/profile';
+import { hasConfirmedAdult, hasFinishedOnboarding } from '@/api/profile';
+import { ButtonOutline } from '@/components/button-outline';
 import { TabBar } from '@/components/tab-bar';
 import { registerPushToken } from '@/lib/push-token';
+import { colors, space, typography } from '@/theme';
+
+// Where the gate sends someone: still checking, to the 18+ step, to the rest of onboarding,
+// into the tabs, or the check failed.
+type Gate = 'checking' | 'confirm-adult' | 'onboarding' | 'tabs' | 'failed';
 
 export default function TabLayout() {
-    // null while we check. Someone who hasn't finished onboarding is sent there instead of Discover.
-    const [onboarded, setOnboarded] = useState<boolean | null>(null);
+    const [gate, setGate] = useState<Gate>('checking');
+    const [attempt, setAttempt] = useState(0);
 
-    // If the check fails (no network), let them in: most people opening the app are returning users,
-    // and the check runs again on the next start, so a new user still gets onboarding then.
+    // Nobody reaches the tabs without confirming they're 18+ (an App Store must-have), then finishing onboarding.
+    // If the check fails (no network), say so with Try again: letting them in could skip the 18+ step.
     useEffect(() => {
-        hasFinishedOnboarding()
-            .then(setOnboarded)
-            .catch(() => setOnboarded(true));
-    }, []);
+        Promise.all([hasConfirmedAdult(), hasFinishedOnboarding()]).then(
+            ([adult, finished]) => {
+                if (!adult) setGate('confirm-adult');
+                else if (!finished) setGate('onboarding');
+                else setGate('tabs');
+            },
+            () => setGate('failed'),
+        );
+    }, [attempt]);
 
     // On every start, save this phone's push token again in case it changed.
     // Only if they already allowed notifications: this never asks. A failure just waits for the next start.
     useEffect(() => {
-        if (onboarded) {
+        if (gate === 'tabs') {
             registerPushToken().catch(() => {});
         }
-    }, [onboarded]);
+    }, [gate]);
 
-    if (onboarded === null) {
+    if (gate === 'checking') {
         return null;
     }
-    if (!onboarded) {
+    if (gate === 'failed') {
+        const retry = () => {
+            setGate('checking');
+            setAttempt(attempt + 1);
+        };
+        return (
+            <View style={styles.failed}>
+                <Text style={styles.failedText}>Couldn&apos;t load your account.</Text>
+                <ButtonOutline label="Try again" onPress={retry} />
+            </View>
+        );
+    }
+    if (gate === 'confirm-adult') {
+        return <Redirect href="/adult" />;
+    }
+    if (gate === 'onboarding') {
         return <Redirect href="/campus" />;
     }
 
@@ -43,3 +70,8 @@ export default function TabLayout() {
         </Tabs>
 )
 }
+
+const styles = StyleSheet.create({
+    failed: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: space[12], backgroundColor: colors.bg.screen },
+    failedText: { ...typography['Body/Regular'], color: colors.text.primary },
+});

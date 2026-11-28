@@ -29,18 +29,19 @@ jest.mock('@/lib/push-token', () => ({ registerPushToken: jest.fn(async () => {}
 const mockGetProviderProfile = getProviderProfile as jest.Mock;
 const mockRequestPermissions = Notifications.requestPermissionsAsync as jest.Mock;
 
-// A tiny stand-in for the profiles table: user id -> onboarding_completed_at.
+// A tiny stand-in for the profiles table: user id -> adult_confirmed_at and onboarding_completed_at.
 // It only understands the two queries profile.ts makes here: read one row, and update one row.
 // Being in the database (not on the phone) is what lets a second phone see that onboarding is done.
-let profiles: Record<string, { onboarding_completed_at: string | null }> = {};
+type FakeProfile = { adult_confirmed_at: string | null; onboarding_completed_at: string | null };
+let profiles: Record<string, FakeProfile> = {};
 let failReads = false;
 
 function fakeProfilesTable() {
-  let newValues: { onboarding_completed_at: string } | null = null;
+  let newValues: Partial<FakeProfile> | null = null;
   let userId = '';
   const query = {
     select: () => query,
-    update: (values: { onboarding_completed_at: string }) => {
+    update: (values: Partial<FakeProfile>) => {
       newValues = values;
       return query;
     },
@@ -68,7 +69,7 @@ function signInAs(id: string) {
 
 beforeEach(() => {
   jest.clearAllMocks();
-  profiles = { ana: { onboarding_completed_at: null } }; // the sign-up trigger made Ana's row
+  profiles = { ana: { adult_confirmed_at: null, onboarding_completed_at: null } }; // the sign-up trigger made Ana's row
   failReads = false;
   signInAs('ana');
   jest.mocked(supabase.from).mockImplementation(() => fakeProfilesTable() as never);
@@ -156,20 +157,38 @@ describe('notifications step', () => {
 });
 
 describe('opening the app', () => {
-  test('a new user (onboarding_completed_at empty) is sent to the campus step', async () => {
+  const CONFIRMED = '2026-11-20T17:00:00Z';
+  const FINISHED = '2026-11-20T18:00:00Z';
+
+  test('a brand-new user is sent to the 18+ step first', async () => {
     await render(<TabLayout />);
-    expect(await screen.findByText('redirect:/campus')).toBeTruthy();
+    expect(await screen.findByText('redirect:/adult')).toBeTruthy();
+    expect(screen.queryByText('tabs')).toBeNull();
     expect(registerPushToken).not.toHaveBeenCalled();
   });
 
+  test('a user who confirmed 18+ but has not finished onboarding goes to the campus step', async () => {
+    profiles.ana.adult_confirmed_at = CONFIRMED;
+    await render(<TabLayout />);
+    expect(await screen.findByText('redirect:/campus')).toBeTruthy();
+  });
+
+  test('a user who never confirmed 18+ can\'t reach the tabs, even if onboarding is finished', async () => {
+    profiles.ana.onboarding_completed_at = FINISHED; // e.g. finished before the 18+ step existed
+    await render(<TabLayout />);
+    expect(await screen.findByText('redirect:/adult')).toBeTruthy();
+    expect(screen.queryByText('tabs')).toBeNull();
+  });
+
   test('a returning user skips onboarding, and their push token is saved again', async () => {
-    profiles.ana.onboarding_completed_at = '2026-11-20T18:00:00Z';
+    profiles.ana = { adult_confirmed_at: CONFIRMED, onboarding_completed_at: FINISHED };
     await render(<TabLayout />);
     expect(await screen.findByText('tabs')).toBeTruthy();
     expect(registerPushToken).toHaveBeenCalledTimes(1);
   });
 
   test('finishing on one phone skips onboarding on another (it is saved in the database)', async () => {
+    profiles.ana.adult_confirmed_at = CONFIRMED;
     await finishOnboarding(); // phone 1
     expect(profiles.ana.onboarding_completed_at).not.toBeNull();
 
@@ -179,16 +198,22 @@ describe('opening the app', () => {
   });
 
   test('is keyed on who is signed in: another account still gets onboarding', async () => {
-    profiles.ana.onboarding_completed_at = '2026-11-20T18:00:00Z';
-    profiles.ben = { onboarding_completed_at: null };
+    profiles.ana = { adult_confirmed_at: CONFIRMED, onboarding_completed_at: FINISHED };
+    profiles.ben = { adult_confirmed_at: null, onboarding_completed_at: null };
     signInAs('ben');
     await render(<TabLayout />);
-    expect(await screen.findByText('redirect:/campus')).toBeTruthy();
+    expect(await screen.findByText('redirect:/adult')).toBeTruthy();
   });
 
-  test('if the check fails (offline), lets them in instead of a blank screen', async () => {
+  test('if the check fails (offline), shows Try again instead of letting them in', async () => {
+    profiles.ana = { adult_confirmed_at: CONFIRMED, onboarding_completed_at: FINISHED };
     failReads = true;
     await render(<TabLayout />);
+    expect(await screen.findByText("Couldn't load your account.")).toBeTruthy();
+    expect(screen.queryByText('tabs')).toBeNull();
+
+    failReads = false;
+    await fireEvent.press(screen.getByText('Try again'));
     expect(await screen.findByText('tabs')).toBeTruthy();
   });
 });

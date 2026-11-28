@@ -5,7 +5,7 @@ import { getMyCampus, getMySports, saveCampus, saveSports } from '@/api/profile'
 import CampusScreen from '@/app/(onboarding)/campus';
 import SportsScreen from '@/app/(onboarding)/sports';
 
-jest.mock('expo-router', () => ({ router: { push: jest.fn(), back: jest.fn() } }));
+jest.mock('expo-router', () => ({ router: { push: jest.fn(), back: jest.fn(), canGoBack: jest.fn(() => true) } }));
 jest.mock('react-native-safe-area-context', () => require('react-native-safe-area-context/jest/mock').default);
 jest.mock('@/api/profile', () => ({
   getMyCampus: jest.fn(),
@@ -16,6 +16,7 @@ jest.mock('@/api/profile', () => ({
 
 beforeEach(() => {
   jest.clearAllMocks();
+  jest.mocked(router.canGoBack).mockReturnValue(true);
   jest.mocked(getMyCampus).mockResolvedValue(null);
   jest.mocked(getMySports).mockResolvedValue([]);
   jest.mocked(saveCampus).mockResolvedValue();
@@ -56,7 +57,8 @@ describe('campus step', () => {
     expect(router.push).not.toHaveBeenCalled();
   });
 
-  test('has no Back button, because it is the first step', async () => {
+  test('has no Back button when the gate opened it directly (nothing behind it)', async () => {
+    jest.mocked(router.canGoBack).mockReturnValue(false);
     await render(<CampusScreen />);
     expect(screen.queryByLabelText('Back')).toBeNull();
   });
@@ -111,7 +113,7 @@ describe('sports step', () => {
     expect(router.push).not.toHaveBeenCalled();
   });
 
-  test('Back goes to the Campus step', async () => {
+  test('Back goes to the previous step', async () => {
     await render(<SportsScreen />);
     await fireEvent.press(screen.getByLabelText('Back'));
     expect(router.back).toHaveBeenCalled();

@@ -6,15 +6,16 @@ import { Pressable, StyleSheet, View } from 'react-native';
 
 import { colors, space } from '@/theme';
 
-// Campus, Sports & level, Photo, 18+, Notifications.
+// 18+, Campus, Sports & level, Photo, Notifications.
 export const ONBOARDING_STEPS = 5;
 
 type StepHeaderProps = {
   step: number; // 1 for the first step
-  showBack?: boolean; // false on the first step: there's nothing to go back to
 };
 
-export function StepHeader({ step, showBack = true }: StepHeaderProps) {
+export function StepHeader({ step }: StepHeaderProps) {
+  // No Back when there's nothing behind this step, e.g. the gate opened it directly.
+  const showBack = router.canGoBack();
   return (
     <View style={styles.header}>
       <View style={styles.back}>

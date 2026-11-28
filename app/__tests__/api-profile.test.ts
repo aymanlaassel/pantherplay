@@ -1,4 +1,5 @@
 import {
+  confirmAdult,
   finishOnboarding,
   getGamesPlayed,
   getMyCampus,
@@ -7,6 +8,7 @@ import {
   getMySports,
   getPlayer,
   getProfile,
+  hasConfirmedAdult,
   hasFinishedOnboarding,
   saveCampus,
   saveSports,
@@ -254,5 +256,29 @@ describe('onboarding status', () => {
     await expect(hasFinishedOnboarding()).rejects.toThrow('Network request failed');
     jest.mocked(getUserId).mockResolvedValue(null);
     expect(await hasFinishedOnboarding()).toBe(false);
+  });
+});
+
+describe('18+ confirmation', () => {
+  test('confirmAdult stamps adult_confirmed_at on my row', async () => {
+    const query = queue({ data: null, error: null });
+    await confirmAdult();
+    expect(from).toHaveBeenCalledWith('profiles');
+    expect(query.update).toHaveBeenCalledWith({ adult_confirmed_at: expect.any(String) });
+    expect(query.eq).toHaveBeenCalledWith('id', 'me');
+  });
+
+  test('confirmAdult throws when the database says no, or nobody is signed in', async () => {
+    queue({ data: null, error: { message: 'permission denied' } });
+    await expect(confirmAdult()).rejects.toThrow('permission denied');
+    jest.mocked(getUserId).mockResolvedValue(null);
+    await expect(confirmAdult()).rejects.toThrow('Not signed in');
+  });
+
+  test('hasConfirmedAdult: false until confirmed, then true', async () => {
+    queue({ data: { adult_confirmed_at: null }, error: null });
+    expect(await hasConfirmedAdult()).toBe(false);
+    queue({ data: { adult_confirmed_at: '2026-11-20T17:00:00Z' }, error: null });
+    expect(await hasConfirmedAdult()).toBe(true);
   });
 });

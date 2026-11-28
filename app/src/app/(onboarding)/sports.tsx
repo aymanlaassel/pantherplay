@@ -1,4 +1,4 @@
-// Onboarding step 2: pick the sports you play and a level for each. Saved to profile_sports.
+// Onboarding step 3: pick the sports you play and a level for each. Saved to profile_sports.
 // Figma draws each sport as a "Sport card"; until Felipe approves that component, this uses Chips.
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
@@ -81,7 +81,7 @@ export default function SportsScreen() {
 
   return (
     <SafeAreaView style={styles.screen}>
-      <StepHeader step={2} />
+      <StepHeader step={3} />
 
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.intro}>

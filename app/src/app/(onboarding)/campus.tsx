@@ -1,4 +1,4 @@
-// Onboarding step 1: pick a home campus. No GPS: the student picks it themselves.
+// Onboarding step 2: pick a home campus. No GPS: the student picks it themselves.
 // Figma's frame asks for location instead; issue #88 keeps it to a plain MMC/BBC picker.
 import { router } from 'expo-router';
 import { useEffect, useState } from 'react';
@@ -48,7 +48,7 @@ export default function CampusScreen() {
 
   return (
     <SafeAreaView style={styles.screen}>
-      <StepHeader step={1} showBack={false} />
+      <StepHeader step={2} />
 
       <View style={styles.intro}>
         <Text style={styles.title}>Which campus?</Text>

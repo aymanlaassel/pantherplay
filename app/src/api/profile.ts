@@ -12,6 +12,24 @@ import type { Game, MySport, Profile } from './types';
 // Postgres's code for text that isn't a valid id, like a mistyped link.
 const INVALID_ID = '22P02';
 
+// Onboarding's first step: records that the student confirmed they are 18 or older (no birthdate is kept).
+export async function confirmAdult(): Promise<void> {
+  const me = await getUserId();
+  if (!me) throw new Error('Not signed in');
+  const { error } = await supabase.from('profiles').update({ adult_confirmed_at: new Date().toISOString() }).eq('id', me);
+  if (error) throw new Error(error.message);
+}
+
+// True once confirmAdult() has run for this account. Until then the app keeps them in onboarding.
+export async function hasConfirmedAdult(): Promise<boolean> {
+  const me = await getUserId();
+  if (!me) return false;
+  const { data, error } = await supabase.from('profiles').select('adult_confirmed_at').eq('id', me).maybeSingle();
+  if (error) throw new Error(error.message);
+  const row = data as { adult_confirmed_at: string | null } | null;
+  return row !== null && row.adult_confirmed_at !== null;
+}
+
 // Called when the last onboarding step is done. Stamps profiles.onboarding_completed_at with the
 // current time, so this account skips onboarding on every phone from now on.
 export async function finishOnboarding(): Promise<void> {

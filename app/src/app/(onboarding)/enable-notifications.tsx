@@ -10,11 +10,9 @@ import Svg, { Circle, Path } from 'react-native-svg';
 import { finishOnboarding } from '@/api/profile';
 import { ButtonJoin } from '@/components/button-join';
 import { NotificationLeading } from '@/components/notification-leading';
+import { ONBOARDING_STEPS } from '@/features/onboarding/step-header';
 import { registerPushToken } from '@/lib/push-token';
 import { colors, radius, space, typography } from '@/theme';
-
-// The progress bar has one dash per onboarding step. This is the last one, so all are filled.
-const STEPS = 5;
 
 // The three soft circles behind the bell, biggest first.
 const CIRCLE_SIZES = [228, 172, 116];
@@ -71,7 +69,8 @@ export default function NotificationsOnboardingScreen() {
           <Image source={require('@/assets/images/icons/chevron-left.svg')} style={styles.chevron} />
         </Pressable>
         <View style={styles.progress}>
-          {Array.from({ length: STEPS }, (_, step) => (
+          {/* One dash per onboarding step. This is the last one, so all are filled. */}
+          {Array.from({ length: ONBOARDING_STEPS }, (_, step) => (
             <View key={step} style={styles.dash} />
           ))}
         </View>
