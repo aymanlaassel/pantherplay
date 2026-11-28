@@ -16,7 +16,7 @@ export default function TabLayout() {
         return null;
     }
     if (!onboarded) {
-        return <Redirect href="/photo" />;
+        return <Redirect href="/campus" />;
     }
 
     return (

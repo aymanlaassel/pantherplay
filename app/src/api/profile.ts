@@ -2,6 +2,7 @@
 // For now the time is saved on the phone, so reopening the app still skips onboarding.
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
+import type { Campus } from '@/components/campus-toggle';
 import { getUserId } from '@/lib/auth';
 import { endsAt } from '@/lib/format-time';
 import { supabase } from '@/lib/supabase';
@@ -10,7 +11,7 @@ import { ME } from '@/mock/people';
 import { delay } from './delay';
 import { notEnded, startedAfter, toGames } from './games';
 import { GAME_COLUMNS, PROFILE_COLUMNS, toProfile, type GameRow, type ProfileRow } from './rows';
-import type { Game, Profile } from './types';
+import type { Game, MySport, Profile } from './types';
 
 // Postgres's code for text that isn't a valid id, like a mistyped link.
 const INVALID_ID = '22P02';
@@ -25,6 +26,45 @@ export async function finishOnboarding(): Promise<void> {
 export async function hasFinishedOnboarding(): Promise<boolean> {
   const completedAt = await AsyncStorage.getItem(ONBOARDING_KEY);
   return completedAt !== null;
+}
+
+// The campus picked in onboarding, or null if not picked yet (or nobody is signed in).
+export async function getMyCampus(): Promise<Campus | null> {
+  const me = await getUserId();
+  if (!me) return null;
+  const { data, error } = await supabase.from('profiles').select('campus').eq('id', me).maybeSingle();
+  if (error) throw new Error(error.message);
+  return (data as { campus: Campus | null } | null)?.campus ?? null;
+}
+
+// Onboarding step 1: saves the home campus on the signed-in user's profile.
+export async function saveCampus(campus: Campus): Promise<void> {
+  const me = await getUserId();
+  if (!me) throw new Error('Not signed in');
+  const { error } = await supabase.from('profiles').update({ campus }).eq('id', me);
+  if (error) throw new Error(error.message);
+}
+
+// The sports and levels picked in onboarding (rows of profile_sports). Empty if none yet.
+export async function getMySports(): Promise<MySport[]> {
+  const me = await getUserId();
+  if (!me) return [];
+  const { data, error } = await supabase.from('profile_sports').select('sport, level').eq('user_id', me);
+  if (error) throw new Error(error.message);
+  return data as MySport[];
+}
+
+// Onboarding step 2: replaces the signed-in user's sports with this list.
+// Removes the old rows first, then adds the new ones, so a sport they unpicked doesn't stay behind.
+export async function saveSports(list: MySport[]): Promise<void> {
+  const me = await getUserId();
+  if (!me) throw new Error('Not signed in');
+  const { error: removeError } = await supabase.from('profile_sports').delete().eq('user_id', me);
+  if (removeError) throw new Error(removeError.message);
+  if (list.length === 0) return;
+  const rows = list.map(({ sport, level }) => ({ user_id: me, sport, level }));
+  const { error } = await supabase.from('profile_sports').insert(rows);
+  if (error) throw new Error(error.message);
 }
 
 // The signed-in user's profile. W3-08 reads it from the profiles table by the Supabase user id.

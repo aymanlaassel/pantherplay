@@ -83,9 +83,9 @@ describe('notifications step', () => {
 });
 
 describe('opening the app', () => {
-  test('sends someone who has not finished onboarding to the photo step', async () => {
+  test('sends someone who has not finished onboarding to the campus step', async () => {
     await render(<TabLayout />);
-    expect(await screen.findByText('redirect:/photo')).toBeTruthy();
+    expect(await screen.findByText('redirect:/campus')).toBeTruthy();
   });
 
   test('skips onboarding once it is finished', async () => {

@@ -1,4 +1,4 @@
-import { getGamesPlayed, getMyGames, getMyGamesPlayed, getPlayer } from '@/api/profile';
+import { getGamesPlayed, getMyCampus, getMyGames, getMyGamesPlayed, getMySports, getPlayer, saveCampus, saveSports } from '@/api/profile';
 import type { GameRow } from '@/api/rows';
 import { getUserId } from '@/lib/auth';
 import { supabase } from '@/lib/supabase';
@@ -15,9 +15,9 @@ function queue(result: Result) {
     then: (onDone: (r: Result) => unknown, onFail: (e: unknown) => unknown) => Promise.resolve(result).then(onDone, onFail),
     maybeSingle: jest.fn(async () => result),
   };
-  for (const name of ['select', 'eq', 'neq', 'lt', 'gt', 'or', 'in', 'order']) query[name] = jest.fn(() => query);
+  for (const name of ['select', 'eq', 'neq', 'lt', 'gt', 'or', 'in', 'order', 'update', 'delete', 'insert']) query[name] = jest.fn(() => query);
   from.mockReturnValueOnce(query);
-  return query as Record<'select' | 'eq' | 'neq' | 'lt' | 'gt' | 'or' | 'in' | 'order' | 'maybeSingle', jest.Mock>;
+  return query as Record<'select' | 'eq' | 'neq' | 'lt' | 'gt' | 'or' | 'in' | 'order' | 'update' | 'delete' | 'insert' | 'maybeSingle', jest.Mock>;
 }
 
 beforeEach(() => {
@@ -133,5 +133,64 @@ describe('getMyGames', () => {
     queue({ data: [], error: null });
     queue({ data: null, error: { message: 'JWT expired' } });
     await expect(getMyGames(now)).rejects.toThrow('JWT expired');
+  });
+});
+
+describe('onboarding: campus', () => {
+  test('saveCampus writes the campus on my profile row', async () => {
+    const query = queue({ data: null, error: null });
+    await saveCampus('BBC');
+    expect(from).toHaveBeenCalledWith('profiles');
+    expect(query.update).toHaveBeenCalledWith({ campus: 'BBC' });
+    expect(query.eq).toHaveBeenCalledWith('id', 'me');
+  });
+
+  test('saveCampus throws when the database says no', async () => {
+    queue({ data: null, error: { message: 'permission denied' } });
+    await expect(saveCampus('MMC')).rejects.toThrow('permission denied');
+  });
+
+  test('getMyCampus reads my campus, and is null when nobody is signed in', async () => {
+    queue({ data: { campus: 'MMC' }, error: null });
+    expect(await getMyCampus()).toBe('MMC');
+    jest.mocked(getUserId).mockResolvedValue(null);
+    expect(await getMyCampus()).toBeNull();
+  });
+});
+
+describe('onboarding: sports', () => {
+  test('saveSports removes my old rows, then adds one row per sport', async () => {
+    const remove = queue({ data: null, error: null });
+    const add = queue({ data: null, error: null });
+    await saveSports([
+      { sport: 'soccer', level: 'intermediate' },
+      { sport: 'tennis', level: 'beginner' },
+    ]);
+    expect(from).toHaveBeenNthCalledWith(1, 'profile_sports');
+    expect(remove.delete).toHaveBeenCalled();
+    expect(remove.eq).toHaveBeenCalledWith('user_id', 'me');
+    expect(add.insert).toHaveBeenCalledWith([
+      { user_id: 'me', sport: 'soccer', level: 'intermediate' },
+      { user_id: 'me', sport: 'tennis', level: 'beginner' },
+    ]);
+  });
+
+  test('saveSports stops if removing the old rows fails', async () => {
+    queue({ data: null, error: { message: 'Network request failed' } });
+    await expect(saveSports([{ sport: 'soccer', level: 'advanced' }])).rejects.toThrow('Network request failed');
+    expect(from).toHaveBeenCalledTimes(1);
+  });
+
+  test('saveSports throws when adding the new rows fails', async () => {
+    queue({ data: null, error: null });
+    queue({ data: null, error: { message: 'violates foreign key' } });
+    await expect(saveSports([{ sport: 'soccer', level: 'advanced' }])).rejects.toThrow('violates foreign key');
+  });
+
+  test('getMySports reads my rows of profile_sports', async () => {
+    const query = queue({ data: [{ sport: 'volleyball', level: 'beginner' }], error: null });
+    expect(await getMySports()).toEqual([{ sport: 'volleyball', level: 'beginner' }]);
+    expect(from).toHaveBeenCalledWith('profile_sports');
+    expect(query.eq).toHaveBeenCalledWith('user_id', 'me');
   });
 });
