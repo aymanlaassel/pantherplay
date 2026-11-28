@@ -43,11 +43,13 @@ flowchart LR
   end
 
   Google["Google sign-in<br/>(used for now)"]
+  Apple["Sign in with Apple<br/>(iPhone only)"]
   FIU["FIU official login<br/>(later — PantherSoft)"]
   Push["Expo Push service"]
 
   App -- "1. sign in" --> Auth
   Auth -- "checks identity" --> Google
+  Auth -- "checks identity" --> Apple
   Auth -.-> FIU
   App -- "2. read & write data" --> DB
   DB -- "3. changes stream back" --> RT
@@ -66,7 +68,7 @@ flowchart LR
 |---|---|
 | **PantherPlay app** | Everything the student sees and taps. It shows screens, sends what the student does (join, post, leave) to Supabase, and redraws when data changes. It does **not** decide rules like "is this game full?". |
 | **Auth** | Knowing who is signed in. After sign-in it gives the app a token (a digital ID card) that's attached to every request, so the database knows who is asking. |
-| **Google sign-in** | Proving the person owns their Google account. Used until FIU login is ready. Setup: [google-sign-in-setup.md](./google-sign-in-setup.md). |
+| **Google sign-in** | Proving the person owns their Google account. Used until FIU login is ready. Setup: [google-sign-in-setup.md](./google-sign-in-setup.md). Sign in with Apple sits next to it on iPhone (decided Nov 25); setup: [apple-sign-in-setup.md](./apple-sign-in-setup.md). |
 | **FIU official login** | Replacing Google later. PantherSoft builds this; we don't. |
 | **Postgres database** | Storing everything that must survive closing the app: profiles, games, who joined. It also **enforces the rules**: Row Level Security (RLS) decides who may read or change each row, and functions like `join_game` stop overbooking. |
 | **Realtime** | Watching the database and pushing changes to every phone with that screen open, so spot counts update without a refresh. Discover and Map listen to `games` (`onGamesChange`) and an open Game detail listens to its `game_players` rows (`onGamePlayersChange`), both in `src/api/games.ts`; each screen stops listening when it closes. |
@@ -79,7 +81,7 @@ flowchart LR
 
 **What it shows:** the folders in the repo and what goes in each.
 
-**Key idea:** the phone app lives in `app/`. Screens go in `app/src/app/`, reusable pieces in the rest of `app/src/`, and database changes in `supabase/`. **Only `app/src/lib/auth.ts` knows we use Google**, so swapping in FIU login later touches one file.
+**Key idea:** the phone app lives in `app/`. Screens go in `app/src/app/`, reusable pieces in the rest of `app/src/`, and database changes in `supabase/`. **Only `app/src/lib/auth.ts` knows we use Google and Apple**, so swapping in FIU login later touches one file.
 
 ```mermaid
 flowchart TB
@@ -102,7 +104,7 @@ flowchart TB
   Screens --> Tabs["(tabs)/<br/>discover, profile, …"]
   Screens --> Pushed["game/[id] · game/create · player/[id] · notifications · settings"]
 
-  Lib --> AuthTs["auth.ts ⚠️<br/>the ONLY file that knows<br/>about Google sign-in"]
+  Lib --> AuthTs["auth.ts ⚠️<br/>the ONLY file that knows<br/>about Google and Apple sign-in"]
   Lib --> Client["supabase.ts<br/>database client"]
 
   Supa --> Mig["migrations/<br/>every database change, in order"]
@@ -131,7 +133,7 @@ flowchart TB
 | `app/src/api/` | The only place screens get data from: small functions like `getGames(campus)`, `getLocations(campus)` or `joinGame(id)`, so screens never write database queries themselves. `types.ts` holds the contract types (`Game`, `Player`, `Location`, `Profile`), which mirror the database tables. `joinGame`, `leaveGame` and `createGame` call the database functions `join_game`, `leave_game` and `create_game` (W5-03), so the database decides Joined or Waitlisted and `createGame` returns the new game's id. `getGames`, `getGame` and `getLocations` read Supabase (W5-02): one request brings a game with its host, sport, location and players, and `rows.ts` turns the snake_case rows into the contract types. `spotsFilled` and `myStatus` are still counted from the players, using the signed-in user's id from `lib/auth.ts`. Onboarding saves through `saveCampus(campus)` (the `profiles.campus` column) and `saveSports(list)` (rows of `profile_sports`), and reads them back with `getMyCampus()` and `getMySports()` so going back keeps earlier choices. `getProfile()` and notifications still return mock data after a short fake delay. |
 | `app/src/mock/` | Mock data for tests, and for the profile and notifications functions that aren't on Supabase yet. Screens never import it. `games-api.ts` and `locations-api.ts` are stand-ins for `src/api/games.ts` and `src/api/locations.ts` over the mock data, so screen tests run without a database (`jest.mock('@/api/games', () => require('@/mock/games-api'))`). `games.ts` is the one mock games set, deliberately hostile (full, cancelled, starting in 5 minutes, very long names, 47 games on one day) so screens are tested against bad cases. |
 | `app/src/lib/supabase.ts` | Creating the one Supabase connection the whole app shares. |
-| `app/src/lib/auth.ts` | Sign in, sign out, and "who is signed in?". The only file that knows Google is involved. |
+| `app/src/lib/auth.ts` | Sign in (Google, or Apple on iPhone), sign out, and "who is signed in?". The only file that knows Google and Apple are involved. |
 | `supabase/migrations/` | Every database change, as numbered SQL files applied in order. Like git history for the database: anyone can rebuild the same database from scratch. |
 | `supabase/seed.sql` | The starter rows the app needs: the sport list and the campus locations. |
 | `docs/` | This file and ADRs (one short file per big decision, explaining why). |
@@ -147,7 +149,7 @@ flowchart TB
 
 ```mermaid
 flowchart TD
-  Welcome["Welcome<br/>Get started"] --> SignIn["Sign in<br/>Continue with Google"]
+  Welcome["Welcome<br/>Get started"] --> SignIn["Sign in<br/>Continue with Google<br/>or Apple (iPhone)"]
   SignIn --> Gate{"New user?"}
   Gate -- yes --> Campus["Onboarding 1<br/>Which campus?"]
   Campus --> Sports["Onboarding 2<br/>Sports & level"]
@@ -187,7 +189,7 @@ flowchart TD
 | Screen | In charge of |
 |---|---|
 | **Welcome** | The first thing a new person sees: what the app is, and a "Get started" button. |
-| **Sign in** | One "Continue with Google" button for both new and returning users. |
+| **Sign in** | "Continue with Google" for both new and returning users, with "Continue with Apple" under it on iPhone only. |
 | **New user?** | Not a screen. The app checks whether this person has finished onboarding (see diagram 4). |
 | **Onboarding 1–4** | One-time setup for new users: home campus, sports and skill level, profile photo, and permission to send notifications (explained first, then the phone's own prompt). |
 | **Discover / Home** | The live board: a campus toggle (MMC/BBC, same as Map), date chips, a search bar and game cards with a spots bar, plus a filter modal for sport, time and skill level. Shows a spinner while games load, an error with Try again if they fail, and "No games today" when there are none. The main screen. Games come from `getGames(campus)` in `src/api/`, read from Supabase, leaving out cancelled, completed and ended games; search and the date chips don't filter yet. |

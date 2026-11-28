@@ -78,3 +78,11 @@ export const google = {
   stroke: '#747775',
   text: '#1F1F1F',
 } as const;
+
+// Apple's colors for the black "Continue with Apple" button. These come from Apple's
+// Sign in with Apple button rules, not from our Figma, so they live apart from `colors`.
+// https://developer.apple.com/design/human-interface-guidelines/sign-in-with-apple
+export const apple = {
+  fill: '#000000',
+  text: '#FFFFFF',
+} as const;

@@ -1,7 +1,9 @@
-// The only file that knows we sign in with Google. Swapping in FIU login later means
+// The only file that knows we sign in with Google or Apple. Swapping in FIU login later means
 // changing this file, not the screens.
+import * as AppleAuthentication from 'expo-apple-authentication';
 import * as Linking from 'expo-linking';
 import * as WebBrowser from 'expo-web-browser';
+import { Platform } from 'react-native';
 import type { Session } from '@supabase/supabase-js';
 
 import { supabase } from '@/lib/supabase';
@@ -71,12 +73,68 @@ async function signInWithGoogle(): Promise<SignInResult> {
   return {status: 'signed-in'}
 }
 
+// Apple's own sign-in sheet: asks for name and email, then hands the token to Supabase.
+async function signInWithAppleSheet(): Promise<SignInResult> {
+  let credential: AppleAuthentication.AppleAuthenticationCredential;
+  try {
+    credential = await AppleAuthentication.signInAsync({
+      requestedScopes: [
+        AppleAuthentication.AppleAuthenticationScope.FULL_NAME,
+        AppleAuthentication.AppleAuthenticationScope.EMAIL,
+      ],
+    });
+  } catch (error) {
+    // Closing Apple's sheet is not an error.
+    if ((error as { code?: string }).code === 'ERR_REQUEST_CANCELED') {
+      return { status: 'cancelled' };
+    }
+    throw error;
+  }
+
+  if (!credential.identityToken) {
+    return { status: 'error', message: 'Sign-in failed.' };
+  }
+
+  const { error } = await supabase.auth.signInWithIdToken({ provider: 'apple', token: credential.identityToken });
+  if (error) {
+    return { status: 'error', message: error.message };
+  }
+
+  // Apple only shares the name the very first time someone signs in, and the token never has it.
+  // Save it now so getProviderProfile() can prefill it. If this fails they are still signed in.
+  const fullName = credential.fullName ? AppleAuthentication.formatFullName(credential.fullName) : '';
+  if (fullName) {
+    await supabase.auth.updateUser({ data: { full_name: fullName } });
+  }
+
+  return { status: 'signed-in' };
+}
+
+// Turns anything thrown into an error result.
+function failed(error: unknown): SignInResult {
+  return { status: 'error', message: error instanceof Error ? error.message : 'Sign-in failed.' };
+}
+
 // Never throws, so the screen can't get stuck with its button disabled.
 export async function signIn(): Promise <SignInResult> {
   try {
     return await signInWithGoogle();
   } catch (error) {
-    return {status: 'error', message: error instanceof Error ? error.message : 'Sign-in failed.'}
+    return failed(error);
+  }
+}
+
+// Sign in with Apple only works on iPhone and iPad, so screens show its button only when this is true.
+export function canSignInWithApple(): boolean {
+  return Platform.OS === 'ios';
+}
+
+// Same promise as signIn(): never throws.
+export async function signInWithApple(): Promise<SignInResult> {
+  try {
+    return await signInWithAppleSheet();
+  } catch (error) {
+    return failed(error);
   }
 }
 
@@ -104,7 +162,7 @@ export function onAuthChange(callback: (session: Session | null) => void): () =>
   return () => data.subscription.unsubscribe();
 }
 
-// The name and photo the login provider (Google for now) gave us, so onboarding can prefill them.
+// The name and photo the login provider (Google or Apple) gave us, so onboarding can prefill them.
 // Either can be null: not every account has a photo.
 export type ProviderProfile = { name: string | null; photoUrl: string | null };
 
@@ -114,6 +172,7 @@ export async function getProviderProfile(): Promise<ProviderProfile> {
     return { name: null, photoUrl: null };
   }
   // Google puts these in user_metadata. Some accounts use `picture` instead of `avatar_url`.
+  // Apple never gives a photo; its name is saved as full_name by signInWithAppleSheet().
   const metadata = session.user.user_metadata;
   return {
     name: metadata.full_name ?? metadata.name ?? null,
