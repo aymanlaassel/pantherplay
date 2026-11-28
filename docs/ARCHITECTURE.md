@@ -39,7 +39,7 @@ flowchart LR
     Auth["Auth<br/>who is signed in"]
     DB[("Postgres database<br/>games, players, profiles")]
     RT["Realtime<br/>live spot counts"]
-    Fn["Edge Functions<br/>send push notifications"]
+    Fn["Edge Functions<br/>send-push"]
   end
 
   Google["Google sign-in<br/>(used for now)"]
@@ -54,7 +54,7 @@ flowchart LR
   App -- "2. read & write data" --> DB
   DB -- "3. changes stream back" --> RT
   RT -- "live updates" --> App
-  DB -- "4. something important happened" --> Fn
+  DB -- "4. new notification row<br/>(database webhook)" --> Fn
   Fn --> Push
   Push -- "notification" --> App
 
@@ -72,7 +72,7 @@ flowchart LR
 | **FIU official login** | Replacing Google later. PantherSoft builds this; we don't. |
 | **Postgres database** | Storing everything that must survive closing the app: profiles, games, who joined. It also **enforces the rules**: Row Level Security (RLS) decides who may read or change each row, and functions like `join_game` stop overbooking. |
 | **Realtime** | Watching the database and pushing changes to every phone with that screen open, so spot counts update without a refresh. Discover and Map listen to `games` (`onGamesChange`) and an open Game detail listens to its `game_players` rows (`onGamePlayersChange`), both in `src/api/games.ts`; each screen stops listening when it closes. |
-| **Edge Functions** | Small pieces of server code that Supabase runs for us. Here they decide who should get a notification and hand it to Expo Push. They hold the secret service key, which must never be in the app. |
+| **Edge Functions** | Small pieces of server code that Supabase runs for us, in `supabase/functions/` (they run on Deno, not Node). `send-push` runs whenever a row is added to `notifications`: a database webhook calls it, it skips types that stay in-app only, looks up the user's `push_tokens`, sends through Expo Push and deletes tokens Expo reports as no longer registered. Only `game-cancelled`, `game-changed`, `waitlist-opened` and `game-confirmed` are pushed, the events that change whether, when or where you show up. Its secrets (the service key, the webhook secret, an optional Expo access token) live in the function's settings, never in the app or the repo. Setup: [push-notifications-setup.md](./push-notifications-setup.md). |
 | **Expo Push service** | Delivering the notification through Apple and Google so it shows on the lock screen, even when the app is closed. |
 
 ---

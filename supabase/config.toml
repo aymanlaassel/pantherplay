@@ -420,3 +420,8 @@ enabled = true
 # formatted with uppercase keywords, indent 2, max width 180, trailing commas,
 # and column/key alignment. Set to "null" to emit raw, unformatted SQL.
 # format_options = "{\"keywordCase\":\"upper\",\"indent\":2,\"maxWidth\":180,\"commaStyle\":\"trailing\"}"
+
+# send-push is called by our database webhook, not by the app, so it checks its own
+# x-webhook-secret header instead of a signed-in user's token. See docs/push-notifications-setup.md.
+[functions.send-push]
+verify_jwt = false
