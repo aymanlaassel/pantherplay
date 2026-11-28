@@ -7,6 +7,7 @@ import Svg, { Circle, Path } from 'react-native-svg';
 
 import { ButtonOutline } from '@/components/button-outline';
 import { Icon, type IconName } from '@/components/icon';
+import { useBlockedPlayers } from '@/features/settings/use-blocked-players';
 import { colors, radius, space, typography } from '@/theme';
 
 // Screen-local artwork; no additions to the shared icon library.
@@ -18,15 +19,25 @@ const rowPaths: Record<string, string> = {
   'Terms & Privacy Policy': 'M6 3h8l4 4v14H6V3ZM14 3v5h4M9 12h6M9 16h6',
 };
 
-const sections: { title: string; rows: { label: string; value?: string; icon?: IconName }[] }[] = [
+type Row = { label: string; value?: string; icon?: IconName };
+
+// The blocked count shows once it has loaded.
+const sectionsWith = (blockedCount: string | undefined): { title: string; rows: Row[] }[] => [
   { title: 'Account', rows: [{ label: 'Sports & levels', value: '2 sports' }, { label: 'Home campus', value: 'MMC', icon: 'pin' }] },
   { title: 'Preferences', rows: [{ label: 'Notifications', value: 'On', icon: 'bell' }] },
-  { title: 'Privacy & Safety', rows: [{ label: 'Blocked players', value: '0' }] },
+  { title: 'Privacy & Safety', rows: [{ label: 'Blocked players', value: blockedCount }] },
   { title: 'Support', rows: [{ label: 'Help & feedback' }, { label: 'Report a problem' }, { label: 'Terms & Privacy Policy' }] },
 ];
 
+const rowActions: Record<string, () => void> = {
+  'Blocked players': () => router.push('/settings/blocked'),
+  'Terms & Privacy Policy': () => { void WebBrowser.openBrowserAsync('https://example.com'); },
+};
+
 export default function SettingsScreen() {
   const insets = useSafeAreaInsets();
+  const { players } = useBlockedPlayers();
+  const sections = sectionsWith(players ? String(players.length) : undefined);
   return (
     <ScrollView style={styles.screen} contentContainerStyle={[styles.content, { paddingTop: insets.top + space[16], paddingBottom: insets.bottom + space[20] }]}>
       <Pressable onPress={() => router.back()} accessibilityRole="button" accessibilityLabel="Back" style={styles.back}>
@@ -51,7 +62,7 @@ export default function SettingsScreen() {
                 key={row.label}
                 accessibilityRole="button"
                 accessibilityLabel={row.value ? `${row.label}, ${row.value}` : row.label}
-                onPress={row.label === 'Terms & Privacy Policy' ? () => { void WebBrowser.openBrowserAsync('https://example.com'); } : undefined}
+                onPress={rowActions[row.label]}
                 style={styles.row}>
                 <View style={styles.iconBox}>
                   {row.icon ? <Icon name={row.icon} color={colors.icon.active} size={18} /> : (

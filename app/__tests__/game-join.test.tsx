@@ -73,6 +73,13 @@ describe('Join and Leave', () => {
     expect(screen.getByText('8 of 10 spots filled')).toBeTruthy();
   });
 
+  test('a confirmed game shows the Confirmed badge and can still be joined', async () => {
+    mockGames().find((g) => g.id === '1')!.status = 'confirmed';
+    await open('1');
+    expect(screen.getByText('Confirmed')).toBeTruthy();
+    expect(screen.getByText('Join game')).toBeTruthy();
+  });
+
   test('a cancelled game cannot be joined', async () => {
     await open('cancelled');
     expect(screen.getByRole('button', { name: 'Game cancelled', disabled: true })).toBeTruthy();
@@ -88,7 +95,8 @@ describe('Join and Leave', () => {
 
   test('a join that worked but could not be reloaded shows the load error, not a failed join', async () => {
     await open('1');
-    jest.spyOn(api, 'getGame').mockRejectedValueOnce(new Error('offline'));
+    // Every reload fails: the one after Join and the live one Realtime starts.
+    jest.spyOn(api, 'getGame').mockRejectedValue(new Error('offline'));
     await fireEvent.press(screen.getByText('Join game'));
     expect(screen.getByText("Couldn't load this game.")).toBeTruthy();
     expect(screen.queryByText("That didn't work. Try again.")).toBeNull();

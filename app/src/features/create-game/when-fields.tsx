@@ -6,6 +6,8 @@ import { ButtonOutline } from '@/components/button-outline';
 import { Field } from '@/components/field';
 import { colors, space, typography } from '@/theme';
 
+import { latestStart } from './options';
+
 type Mode = 'date' | 'time';
 type WhenFieldsProps = { value: Date; onChange: (value: Date) => void; error?: string };
 
@@ -19,7 +21,7 @@ export function WhenFields({ value, onChange, error }: WhenFieldsProps) {
 
   const show = (mode: Mode) => {
     if (Platform.OS !== 'android') return setOpen(open === mode ? null : mode);
-    DateTimePickerAndroid.open({ value, mode, onValueChange: (_event, picked) => onChange(picked) });
+    DateTimePickerAndroid.open({ value, mode, maximumDate: latestStart(new Date()), onValueChange: (_event, picked) => onChange(picked) });
   };
 
   return (
@@ -42,6 +44,7 @@ export function WhenFields({ value, onChange, error }: WhenFieldsProps) {
             value={value}
             mode={open}
             display="spinner"
+            maximumDate={latestStart(new Date())}
             onValueChange={(_event, picked) => onChange(picked)}
           />
           <ButtonOutline label="Done" onPress={() => setOpen(null)} />

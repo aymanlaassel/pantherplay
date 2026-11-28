@@ -69,7 +69,7 @@ flowchart LR
 | **Google sign-in** | Proving the person owns their Google account. Used until FIU login is ready. Setup: [google-sign-in-setup.md](./google-sign-in-setup.md). |
 | **FIU official login** | Replacing Google later. PantherSoft builds this; we don't. |
 | **Postgres database** | Storing everything that must survive closing the app: profiles, games, who joined. It also **enforces the rules**: Row Level Security (RLS) decides who may read or change each row, and functions like `join_game` stop overbooking. |
-| **Realtime** | Watching the database and pushing changes to every phone with that screen open, so spot counts update without a refresh. |
+| **Realtime** | Watching the database and pushing changes to every phone with that screen open, so spot counts update without a refresh. Discover and Map listen to `games` (`onGamesChange`) and an open Game detail listens to its `game_players` rows (`onGamePlayersChange`), both in `src/api/games.ts`; each screen stops listening when it closes. |
 | **Edge Functions** | Small pieces of server code that Supabase runs for us. Here they decide who should get a notification and hand it to Expo Push. They hold the secret service key, which must never be in the app. |
 | **Expo Push service** | Delivering the notification through Apple and Google so it shows on the lock screen, even when the app is closed. |
 
@@ -100,7 +100,7 @@ flowchart TB
   Screens --> AuthScreens["(auth)/<br/>welcome, sign-in"]
   Screens --> Onb["(onboarding)/<br/>campus, sports, photo, notifications"]
   Screens --> Tabs["(tabs)/<br/>discover, profile, …"]
-  Screens --> Pushed["game/[id] · game/create · notifications · settings"]
+  Screens --> Pushed["game/[id] · game/create · player/[id] · notifications · settings"]
 
   Lib --> AuthTs["auth.ts ⚠️<br/>the ONLY file that knows<br/>about Google sign-in"]
   Lib --> Client["supabase.ts<br/>database client"]
@@ -172,12 +172,14 @@ flowchart TD
   Profile -- "gear icon" --> Settings["Settings"]
   Settings -- "Delete account" --> DeleteAccount["Delete account<br/>type DELETE to enable placeholder action"]
   DeleteAccount -- "Cancel / placeholder Delete" --> Settings
+  Settings -- "Blocked players" --> Blocked["Blocked players<br/>list and Unblock"]
   Settings -. "later ticket; row is inert" .-> NotifPrefs["Notification preferences<br/>(not implemented)"]
   Notifications -- "tap a notification" --> Detail
-  MyGames["My Games<br/>(pending — no tab slot yet)"] -.-> Detail
+  Detail -- "tap the host or a player" --> Player["Player profile"]
+  Profile -- "tap one of My Games" --> Detail
 
   classDef pending stroke-dasharray: 5 5,color:#5A6B7D
-  class NotifPrefs,MyGames,Campus,Sports,Photo,Notif pending
+  class NotifPrefs,Campus,Sports,Photo,Notif pending
 ```
 
 **What each screen does:**
@@ -188,18 +190,20 @@ flowchart TD
 | **Sign in** | One "Continue with Google" button for both new and returning users. |
 | **New user?** | Not a screen. The app checks whether this person has finished onboarding (see diagram 4). |
 | **Onboarding 1–4** | One-time setup for new users: home campus, sports and skill level, profile photo, and permission to send notifications (explained first, then the phone's own prompt). |
-| **Discover / Home** | The live board: a campus toggle (MMC/BBC, same as Map), date chips, a search bar and game cards with a spots bar, plus a filter modal for sport, time and skill level. Shows a spinner while games load, an error with Try again if they fail, and "No games today" when there are none. The main screen. Games come from `getGames(campus)` in `src/api/`, read from Supabase; search and the date chips don't filter yet. |
+| **Discover / Home** | The live board: a campus toggle (MMC/BBC, same as Map), date chips, a search bar and game cards with a spots bar, plus a filter modal for sport, time and skill level. Shows a spinner while games load, an error with Try again if they fail, and "No games today" when there are none. The main screen. Games come from `getGames(campus)` in `src/api/`, read from Supabase, leaving out cancelled, completed and ended games; search and the date chips don't filter yet. |
 | **Map** | A native map (`react-native-maps`, see [ADR 0004](./adr/0004-map-tab.md)) with a pin for each game at the chosen campus (MMC/BBC), plus a bottom sheet listing them by start time. It loads the same `getGames(campus)` as Discover, so both tabs show the same games, with a spinner while loading and an error with Try again. Tap a game once to highlight it and center the map; tap again to open Game detail. |
 | **＋** | The center tab button. Opens Create game. |
 | **Social** | The fourth tab: a Chats list (All, Groups and Unread filters) and a Friends list, with search across both. See the [scope note](./social-page-scope.md). It's a skeleton on mock data for now: real chat and friend requests aren't built yet. |
-| **Profile** | Your photo or initials, your name, and your next joined game, plus the gear icon that opens Settings. Loads through `getProfile()` and `getGames()` in `src/api/`, with a spinner and an error with Try again. Username, win/loss record and reliability are hidden until those are decided; Edit profile doesn't do anything yet. |
-| **Game detail** | One game: when, where, who's going, spots left, and the Join button. It opens on top of the tabs with a back button. The game comes from `getGame(id)`; spots filled are counted from its players, and "Hosted N games" under the host is counted from the host's games (cancelled ones don't count). Join calls `joinGame(id)` and shows Joined or Waitlisted; once you're in, the button becomes Leave (`leaveGame(id)`). A cancelled game can't be joined. Has loading and error states with Try again. The game and Join and Leave all go to the database. |
+| **Profile** | Your photo or initials, your name, games played, and My Games (upcoming games you host or joined, soonest first; tap one to open it), plus the gear icon that opens Settings. Loads through `getProfile()`, `getMyGamesPlayed()` and `getMyGames()` in `src/api/profile.ts`, with a spinner and an error with Try again. Felipe decided on Nov 25 that My Games lives here and there is no reliability score; username and win/loss stay hidden. Edit profile doesn't do anything yet. |
+| **Game detail** | One game: when, where, who's going, spots left, and the Join button. It opens on top of the tabs with a back button. The game comes from `getGame(id)`; spots filled are counted from its players, and "Hosted N games" under the host is counted from the host's games (cancelled ones don't count). Join calls `joinGame(id)` and shows Joined or Waitlisted; once you're in, the button becomes Leave (`leaveGame(id)`). Waitlisted players see their place in line ("2nd on the waitlist"), counted from when each waitlisted player joined. One More button opens a bottom sheet: the host gets host options (Cancel game, which asks to confirm and then calls `cancelGame(id)`); everyone else gets the Report sheet (report the game or the host, or block the host). A confirmed game (half the spots filled, set by the database) shows a Confirmed badge. A cancelled game can't be joined. Has loading and error states with Try again. The game and Join and Leave all go to the database. |
+| **Player profile** | Another player's photo or initials, name, home campus and games played (joined games that have ended, not cancelled ones). Opened by tapping the host or a player on Game detail. Loads through `getPlayer(id)` and `getGamesPlayed(id)` in `src/api/profile.ts`; a missing or deleted player shows "This player isn't available". Its More button opens the Report sheet for that player. |
+| **Report sheet** | A bottom sheet (`src/features/safety/report-sheet.tsx`) to report a game, player or chat message with a reason and optional details, or block a player after confirming. Opened from More on Game detail and Player profile. Calls `report()` and `blockUser()` in `src/api/safety.ts`, mock data until W8-01 adds the tables. |
 | **Notifications** | Your list of updates (game cancelled, spot opened). Opened from the bell on Home. |
-| **Create game** | The full-screen form to host a game. Duration is 1, 1.5 or 2 hours, and the place is picked from the campus's fixed spots (`getLocations(campus)`). Posting it opens the new game's detail page. |
-| **Settings** | Opened from the gear on Profile. A mock profile, Account, Preferences, Privacy & Safety, Support, a placeholder Sign out, and Delete account. Terms & Privacy Policy opens a placeholder browser URL. Unfinished rows do nothing. |
+| **Create game** | The full-screen form to host a game. Games can be up to 14 days ahead (the date picker stops there). Duration is 1, 1.5 or 2 hours, and the place is picked from the campus's fixed spots (`getLocations(campus)`). Posting it opens the new game's detail page. |
+| **Settings** | Opened from the gear on Profile. A mock profile, Account, Preferences, Privacy & Safety, Support, a placeholder Sign out, and Delete account. Blocked players shows how many players you blocked and opens their list. Terms & Privacy Policy opens a placeholder browser URL. Unfinished rows do nothing. |
+| **Blocked players** | The players you blocked, each with Unblock, and "You haven't blocked anyone" when there are none. Loads through `getBlockedUsers()` and `unblockUser(id)` in `src/api/safety.ts`, mock data until the blocks table lands (W8-01). Blocking itself happens from the Report sheet. |
 | **Delete account** | Warning and deleted-data list, exact DELETE confirmation, and Cancel. The enabled Delete action only goes back; no data is deleted. |
 | **Notification preferences** | Designed, but implementation is a later ticket. Settings does not navigate here yet. |
-| **My Games** | Games you've joined or host. Pending: it has no tab slot yet. |
 
 ---
 

@@ -1,9 +1,9 @@
 // Loads a campus's games and tracks whether they're loading, ready or failed.
-// Loads again each time the tab regains focus, so a game posted elsewhere shows up.
+// Loads again each time the tab regains focus, and live whenever a game changes (Realtime).
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 
-import { getGames } from '@/api/games';
+import { getGames, onGamesChange } from '@/api/games';
 import type { Game } from '@/api/types';
 import type { Campus } from '@/components/campus-toggle';
 
@@ -18,12 +18,17 @@ export function useGames(campus: Campus) {
     useCallback(() => {
       // Ignore the answer if the campus changed or a retry started while it was on its way.
       let current = true;
-      getGames(campus).then(
-        (games) => current && setResult({ key, games }),
-        () => current && setResult({ key, games: null }),
-      );
+      const load = () =>
+        getGames(campus).then(
+          (games) => current && setResult({ key, games }),
+          () => current && setResult({ key, games: null }),
+        );
+      void load();
+      // games has no campus column, so refetch the campus on any change and let getGames filter.
+      const stop = onGamesChange(load);
       return () => {
         current = false;
+        stop();
       };
     }, [campus, key]),
   );

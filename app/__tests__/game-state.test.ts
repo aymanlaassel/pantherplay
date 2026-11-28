@@ -4,7 +4,7 @@ import { initials } from '@/lib/initials';
 import { mockGames } from '@/mock/games';
 
 const now = new Date('2030-01-01T12:00:00Z');
-const base: Game = { ...mockGames()[0], startsAt: '2030-01-01T19:00:00Z', status: 'open', spotsFilled: 4, myStatus: null, hostGamesCount: 1 };
+const base: Game = { ...mockGames()[0], startsAt: '2030-01-01T19:00:00Z', status: 'open', spotsFilled: 4, myStatus: null, waitlistPosition: null, isHost: false, hostGamesCount: 1 };
 
 test('a cancelled game is cancelled, even if you were in it', () => {
   expect(gameState({ ...base, status: 'cancelled', myStatus: 'joined' }, now)).toBe('cancelled');
@@ -25,6 +25,14 @@ test('being on the waitlist does not show a Full badge', () => {
 test('a game about to start is starting soon', () => {
   expect(gameState({ ...base, startsAt: '2030-01-01T12:05:00Z' }, now)).toBe('starting-soon');
   expect(gameState({ ...base, startsAt: '2030-01-01T11:55:00Z' }, now)).toBe('open');
+});
+
+test('confirmed ranks below cancelled, joined, full and starting soon, and above almost full', () => {
+  const confirmed = { ...base, status: 'confirmed' as const };
+  expect(gameState({ ...confirmed, spotsFilled: 7 }, now)).toBe('confirmed');
+  expect(gameState({ ...confirmed, myStatus: 'joined' }, now)).toBe('joined');
+  expect(gameState({ ...confirmed, spotsFilled: 10 }, now)).toBe('full');
+  expect(gameState({ ...confirmed, startsAt: '2030-01-01T12:05:00Z' }, now)).toBe('starting-soon');
 });
 
 test('3 or fewer spots left is almost full, otherwise open', () => {

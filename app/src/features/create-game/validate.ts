@@ -1,7 +1,7 @@
 import type { Duration, Location, SportCode } from '@/api/types';
 import type { Campus } from '@/components/campus-toggle';
 
-import { MAX_PLAYERS, MIN_PLAYERS, NOTES_MAX } from './options';
+import { latestStart, MAX_DAYS_AHEAD, MAX_PLAYERS, MIN_PLAYERS, NOTES_MAX } from './options';
 
 export type GameForm = {
   sport: SportCode | null;
@@ -22,6 +22,7 @@ export function validateGame(form: GameForm, now: Date = new Date()): GameErrors
   const errors: GameErrors = {};
   if (!form.sport) errors.sport = 'Pick a sport';
   if (form.startsAt.getTime() <= now.getTime()) errors.startsAt = 'Pick a time in the future';
+  else if (form.startsAt.getTime() > latestStart(now).getTime()) errors.startsAt = `Games can be up to ${MAX_DAYS_AHEAD} days ahead`;
   if (!form.location) errors.location = "Pick where you're playing";
   if (form.players < MIN_PLAYERS || form.players > MAX_PLAYERS) {
     errors.players = `Players must be between ${MIN_PLAYERS} and ${MAX_PLAYERS}`;

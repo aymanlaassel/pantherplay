@@ -8,13 +8,15 @@ const SOON_MS = 15 * 60_000;
 const ALMOST_FULL_SPOTS = 3;
 
 // What the badge and the action button show for a game, worked out from its data.
+// Ranked: cancelled, joined, full, starting soon, confirmed, almost full.
 export function gameState(game: Game, now: Date = new Date()): GameState {
   if (game.status === 'cancelled') return 'cancelled';
   if (game.myStatus === 'joined') return 'joined';
-  if (game.myStatus === 'waitlisted') return 'open'; // no waitlist badge until Felipe decides
+  if (game.myStatus === 'waitlisted') return 'open'; // no waitlist badge: Felipe decided on Nov 25 to show the position only
   const spotsLeft = game.maxPlayers - game.spotsFilled;
   if (spotsLeft <= 0) return 'full';
   const untilStart = new Date(game.startsAt).getTime() - now.getTime();
   if (untilStart > 0 && untilStart <= SOON_MS) return 'starting-soon';
+  if (game.status === 'confirmed') return 'confirmed';
   return spotsLeft <= ALMOST_FULL_SPOTS ? 'almost-full' : 'open';
 }

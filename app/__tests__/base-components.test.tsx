@@ -9,8 +9,8 @@ import { colors } from '@/theme';
 const statuses = Object.keys(BADGE_STATUS_LABEL) as GameBadgeStatus[];
 const levels = Object.keys(SKILL_LEVEL_LABEL) as SkillLevel[];
 
-test('Badge/Status has the five states from Figma', () => {
-  expect(statuses).toEqual(['starting-soon', 'almost-full', 'full', 'joined', 'cancelled']);
+test('Badge/Status has the five states from Figma, plus Confirmed (W8-12, awaiting a Figma design)', () => {
+  expect(statuses).toEqual(['starting-soon', 'confirmed', 'almost-full', 'full', 'joined', 'cancelled']);
 });
 
 test.each(statuses)('Badge/Status renders the "%s" state', async (status) => {
