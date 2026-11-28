@@ -6,11 +6,22 @@ insert into auth.users (id, instance_id, aud, role, email, created_at, updated_a
   ('00000000-0000-0000-0000-000000000002', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'maya@test.local', now(), now()),
   ('00000000-0000-0000-0000-000000000003', '00000000-0000-0000-0000-000000000000', 'authenticated', 'authenticated', 'sam@test.local', now(), now());
 
--- TEST PROFILES: one per test user, same id
+-- TEST PROFILES: the sign-up trigger already made one per test user, so this fills them in
 insert into public.profiles (id, display_name, campus, onboarding_completed_at) values
   ('00000000-0000-0000-0000-000000000001', 'Alex Rivera', 'MMC', now()),
   ('00000000-0000-0000-0000-000000000002', 'Maya Thompson', 'MMC', now()),
-  ('00000000-0000-0000-0000-000000000003', 'Sam Okafor', 'BBC', now());
+  ('00000000-0000-0000-0000-000000000003', 'Sam Okafor', 'BBC', now())
+on conflict (id) do update set
+  display_name = excluded.display_name,
+  campus = excluded.campus,
+  onboarding_completed_at = excluded.onboarding_completed_at;
+
+-- TEST SPORTS: what each test user plays, and at what level
+insert into public.profile_sports (user_id, sport, level) values
+  ('00000000-0000-0000-0000-000000000001', 'soccer', 'beginner'),
+  ('00000000-0000-0000-0000-000000000001', 'pickleball', 'beginner'),
+  ('00000000-0000-0000-0000-000000000002', 'basketball', 'intermediate'),
+  ('00000000-0000-0000-0000-000000000003', 'volleyball', 'advanced');
 
 -- TEST GAMES: times are relative to now, so they never go stale
 insert into public.games (id, host_id, sport, location_id, starts_at, duration_minutes, skill_level, max_players, notes, status) values
