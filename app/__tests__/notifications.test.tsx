@@ -6,12 +6,19 @@ import { initials, NotificationLeading } from '@/components/notification-leading
 import { NOTIFICATION_LEADING, NotificationRow, type NotificationType } from '@/components/notification-row';
 import * as notificationsApi from '@/api/notifications';
 import NotificationsScreen, { NotificationsView } from '@/app/notifications';
-import { MOCK_NOTIFICATIONS } from '@/mock/notifications';
+import { mockGames } from '@/mock/games';
+import { MOCK_NOTIFICATIONS, resetMockNotifications } from '@/mock/notifications';
 import { colors, typography } from '@/theme';
 
-jest.mock('expo-router', () => ({ router: { back: jest.fn() } }));
+jest.mock('expo-router', () => ({ router: { back: jest.fn(), push: jest.fn() } }));
 jest.mock('@/api/delay', () => ({ delay: () => Promise.resolve() }));
 jest.mock('react-native-safe-area-context', () => require('react-native-safe-area-context/jest/mock').default);
+
+// Opening the screen marks everything read, so each test starts from the unread seed.
+beforeEach(() => {
+  resetMockNotifications();
+  jest.clearAllMocks();
+});
 
 const types = Object.keys(NOTIFICATION_LEADING) as NotificationType[];
 const flat = (el: { props: { style?: unknown } }) => StyleSheet.flatten(el.props.style as never);
@@ -191,5 +198,77 @@ describe('loading through src/api/', () => {
     expect(load).toHaveBeenCalledTimes(2);
     expect(screen.queryByText("Couldn't load notifications.")).toBeNull();
     expect(screen.getByText(MOCK_NOTIFICATIONS[0].title)).toBeTruthy();
+  });
+});
+
+describe('W8-04 types', () => {
+  // Every event W8-04 creates, and the row kind it lands on.
+  test.each([
+    ['someone joined your game', 'player-joined', 'avatar'],
+    ['someone left your game', 'player-left-late', 'avatar'],
+    ['game cancelled', 'game-cancelled', 'alert'],
+    ['waitlisted player promoted', 'waitlist-opened', 'success'],
+    ['game confirmed', 'game-confirmed', 'success'],
+  ] as const)('%s is a "%s" row with the %s icon', (_event, type, kind) => {
+    expect(NOTIFICATION_LEADING[type]).toBe(kind);
+  });
+
+  test.each(types)('a "%s" row shows its title, body and icon', async (type) => {
+    const n = MOCK_NOTIFICATIONS.find((m) => m.type === type)!;
+    await render(<NotificationsScreen />);
+    const row = within(screen.getByTestId(`notification-${n.id}`));
+    expect(row.getByText(n.title)).toBeTruthy();
+    expect(row.getByText(n.body)).toBeTruthy();
+    expect(row.getByTestId(`notification-leading-${NOTIFICATION_LEADING[type]}`)).toBeTruthy();
+  });
+
+  test('every mock game id points at a real mock game', () => {
+    const ids = new Set(mockGames().map((g) => g.id));
+    for (const n of MOCK_NOTIFICATIONS) expect(ids.has(n.gameId!)).toBe(true);
+  });
+});
+
+describe('mark read', () => {
+  afterEach(() => jest.restoreAllMocks());
+
+  test('opening the screen marks everything read, so the bell has nothing unread', async () => {
+    expect(await notificationsApi.hasUnreadNotifications()).toBe(true);
+    await render(<NotificationsScreen />);
+    expect(await notificationsApi.hasUnreadNotifications()).toBe(false);
+  });
+
+  test('the open screen keeps its New section; the next visit shows them all as Earlier', async () => {
+    await render(<NotificationsScreen />);
+    expect(screen.getByText('New')).toBeTruthy();
+
+    const next = await render(<NotificationsScreen />);
+    expect(next.queryByText('New')).toBeNull();
+    expect(next.queryAllByTestId('unread-dot')).toHaveLength(0);
+  });
+
+  test('a failed load does not mark anything read', async () => {
+    jest.spyOn(notificationsApi, 'getNotifications').mockRejectedValueOnce(new Error('offline'));
+    await render(<NotificationsScreen />);
+    expect(await notificationsApi.hasUnreadNotifications()).toBe(true);
+  });
+});
+
+describe('tapping a game notification', () => {
+  test('opens Game detail for that game', async () => {
+    const n = MOCK_NOTIFICATIONS.find((m) => m.type === 'game-cancelled')!;
+    await render(<NotificationsScreen />);
+    const row = screen.getByTestId(`notification-${n.id}`);
+    expect(row.props.accessibilityRole).toBe('button');
+    fireEvent.press(row);
+    expect(router.push).toHaveBeenCalledWith(`/game/${n.gameId}`);
+  });
+
+  test('a row without a game is not a button and goes nowhere', async () => {
+    const { gameId: _, ...noGame } = MOCK_NOTIFICATIONS[0];
+    await render(<NotificationsView notifications={[noGame]} />);
+    const row = screen.getByTestId(`notification-${noGame.id}`);
+    fireEvent.press(row);
+    expect(router.push).not.toHaveBeenCalled();
+    expect(row.props.accessibilityRole).toBeUndefined();
   });
 });

@@ -5,7 +5,7 @@ import { useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { getNotifications } from '@/api/notifications';
+import { getNotifications, markAllRead } from '@/api/notifications';
 import { ButtonOutline } from '@/components/button-outline';
 import { NotificationRow, type AppNotification } from '@/components/notification-row';
 import { colors, fonts, space, typography } from '@/theme';
@@ -58,7 +58,11 @@ export function NotificationsView({ notifications, status = 'ready', onRetry }: 
             <View key={s.label}>
               <Text style={styles.section}>{s.label}</Text>
               {s.rows.map((n) => (
-                <NotificationRow key={n.id} notification={n} />
+                <NotificationRow
+                  key={n.id}
+                  notification={n}
+                  onPress={n.gameId ? () => router.push(`/game/${n.gameId}`) : undefined}
+                />
               ))}
             </View>
           ))}
@@ -77,7 +81,12 @@ export default function NotificationsScreen() {
     // Ignore the answer if the screen closed or a retry started while it was on its way.
     let current = true;
     getNotifications().then(
-      (list) => current && setNotifications(list),
+      (list) => {
+        if (!current) return;
+        setNotifications(list);
+        // Seen once they are on screen; the list keeps its New section until you come back.
+        markAllRead().catch(() => undefined);
+      },
       () => current && setFailed(true),
     );
     return () => {
