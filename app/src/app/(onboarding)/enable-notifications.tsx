@@ -2,6 +2,7 @@
 import { Image } from 'expo-image';
 import * as Notifications from 'expo-notifications';
 import { router } from 'expo-router';
+import { useState } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Circle, Path } from 'react-native-svg';
@@ -17,13 +18,6 @@ const STEPS = 5;
 
 // The three soft circles behind the bell, biggest first.
 const CIRCLE_SIZES = [228, 172, 116];
-
-// Onboarding is done after this screen, so both buttons save that and go to Discover.
-// replace (not push) so Back can't return to onboarding.
-async function goToDiscover() {
-  await finishOnboarding();
-  router.replace('/');
-}
 
 // The big navy bell with its gold clapper. The circles overlap, so each one in is a shade darker.
 function BellArt() {
@@ -42,6 +36,21 @@ function BellArt() {
 }
 
 export default function NotificationsOnboardingScreen() {
+  const [failed, setFailed] = useState(false);
+
+  // Onboarding is done after this screen, so both buttons save that and go to Discover.
+  // replace (not push) so Back can't return to onboarding. If saving fails, stay and say so.
+  const goToDiscover = async () => {
+    setFailed(false);
+    try {
+      await finishOnboarding();
+    } catch {
+      setFailed(true);
+      return;
+    }
+    router.replace('/');
+  };
+
   // Shows the phone's own "Allow notifications?" prompt. Whatever they pick, we move on.
   // If they allowed it, this phone's push token is saved (registerPushToken skips it otherwise).
   // If the prompt or saving fails (some simulators, Expo Go), still finish so nobody gets stuck here.
@@ -87,6 +96,11 @@ export default function NotificationsOnboardingScreen() {
       </View>
 
       <View style={styles.actions}>
+        {failed ? (
+          <Text style={styles.error} accessibilityRole="alert">
+            Couldn&apos;t finish setting up. Try again.
+          </Text>
+        ) : null}
         <Pressable onPress={goToDiscover} accessibilityRole="button" style={({ pressed }) => pressed && styles.pressed}>
           <Text style={styles.notNow}>Not now</Text>
         </Pressable>
@@ -128,5 +142,6 @@ const styles = StyleSheet.create({
   cardBody: { ...typography.Caption, color: colors.text.muted },
   actions: { gap: space[16] },
   notNow: { ...typography.Label, color: colors.text.muted, textAlign: 'center' },
+  error: { ...typography.Caption, color: colors.text.error, textAlign: 'center' },
   pressed: { opacity: 0.7 },
 });

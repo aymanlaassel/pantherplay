@@ -1,4 +1,16 @@
-import { getGamesPlayed, getMyCampus, getMyGames, getMyGamesPlayed, getMySports, getPlayer, saveCampus, saveSports } from '@/api/profile';
+import {
+  finishOnboarding,
+  getGamesPlayed,
+  getMyCampus,
+  getMyGames,
+  getMyGamesPlayed,
+  getMySports,
+  getPlayer,
+  getProfile,
+  hasFinishedOnboarding,
+  saveCampus,
+  saveSports,
+} from '@/api/profile';
 import type { GameRow } from '@/api/rows';
 import { getUserId } from '@/lib/auth';
 import { supabase } from '@/lib/supabase';
@@ -192,5 +204,55 @@ describe('onboarding: sports', () => {
     expect(await getMySports()).toEqual([{ sport: 'volleyball', level: 'beginner' }]);
     expect(from).toHaveBeenCalledWith('profile_sports');
     expect(query.eq).toHaveBeenCalledWith('user_id', 'me');
+  });
+});
+
+describe('getProfile', () => {
+  test('reads the signed-in user\'s row: real name, photo and campus', async () => {
+    const query = queue({
+      data: { id: 'me', display_name: 'Ana Lopez', avatar_url: 'https://example.com/ana.png', campus: 'MMC' },
+      error: null,
+    });
+    expect(await getProfile()).toEqual({ id: 'me', fullName: 'Ana Lopez', avatarUrl: 'https://example.com/ana.png', campus: 'MMC' });
+    expect(from).toHaveBeenCalledWith('profiles');
+    expect(query.eq).toHaveBeenCalledWith('id', 'me');
+  });
+
+  test('throws when the row is missing, on an error, or when nobody is signed in', async () => {
+    queue({ data: null, error: null });
+    await expect(getProfile()).rejects.toThrow('Profile not found');
+    queue({ data: null, error: { message: 'Network request failed' } });
+    await expect(getProfile()).rejects.toThrow('Network request failed');
+    jest.mocked(getUserId).mockResolvedValue(null);
+    await expect(getProfile()).rejects.toThrow('Not signed in');
+  });
+});
+
+describe('onboarding status', () => {
+  test('finishOnboarding stamps onboarding_completed_at on my row', async () => {
+    const query = queue({ data: null, error: null });
+    await finishOnboarding();
+    expect(from).toHaveBeenCalledWith('profiles');
+    expect(query.update).toHaveBeenCalledWith({ onboarding_completed_at: expect.any(String) });
+    expect(query.eq).toHaveBeenCalledWith('id', 'me');
+  });
+
+  test('finishOnboarding throws when the database says no', async () => {
+    queue({ data: null, error: { message: 'permission denied' } });
+    await expect(finishOnboarding()).rejects.toThrow('permission denied');
+  });
+
+  test('hasFinishedOnboarding: new user false, returning user true', async () => {
+    queue({ data: { onboarding_completed_at: null }, error: null });
+    expect(await hasFinishedOnboarding()).toBe(false);
+    queue({ data: { onboarding_completed_at: '2026-11-20T18:00:00Z' }, error: null });
+    expect(await hasFinishedOnboarding()).toBe(true);
+  });
+
+  test('hasFinishedOnboarding is false when signed out, and throws on an error', async () => {
+    queue({ data: null, error: { message: 'Network request failed' } });
+    await expect(hasFinishedOnboarding()).rejects.toThrow('Network request failed');
+    jest.mocked(getUserId).mockResolvedValue(null);
+    expect(await hasFinishedOnboarding()).toBe(false);
   });
 });

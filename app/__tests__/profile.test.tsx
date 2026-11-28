@@ -40,6 +40,7 @@ const gameAt = (id: string, hours: number, over: Partial<Game> = {}): Game => ({
 
 beforeEach(() => {
   resetMockGames();
+  jest.spyOn(profileApi, 'getProfile').mockResolvedValue(PROFILE);
   jest.spyOn(profileApi, 'getMyGamesPlayed').mockResolvedValue(4);
   jest.spyOn(profileApi, 'getMyGames').mockResolvedValue([]);
   jest.mocked(router.push).mockClear();

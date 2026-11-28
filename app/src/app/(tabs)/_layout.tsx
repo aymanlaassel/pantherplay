@@ -9,8 +9,12 @@ export default function TabLayout() {
     // null while we check. Someone who hasn't finished onboarding is sent there instead of Discover.
     const [onboarded, setOnboarded] = useState<boolean | null>(null);
 
+    // If the check fails (no network), let them in: most people opening the app are returning users,
+    // and the check runs again on the next start, so a new user still gets onboarding then.
     useEffect(() => {
-        hasFinishedOnboarding().then(setOnboarded);
+        hasFinishedOnboarding()
+            .then(setOnboarded)
+            .catch(() => setOnboarded(true));
     }, []);
 
     // On every start, save this phone's push token again in case it changed.

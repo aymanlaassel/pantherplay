@@ -1,31 +1,37 @@
-// Mock until Supabase is wired in (W3-08). Then these read and write profiles.onboarding_completed_at.
-// For now the time is saved on the phone, so reopening the app still skips onboarding.
-import AsyncStorage from '@react-native-async-storage/async-storage';
-
+// The signed-in user's profile and onboarding answers, read from and saved to Supabase.
+// Everything is keyed on the Supabase user id from lib/auth.ts.
 import type { Campus } from '@/components/campus-toggle';
 import { getUserId } from '@/lib/auth';
 import { endsAt } from '@/lib/format-time';
 import { supabase } from '@/lib/supabase';
-import { ME } from '@/mock/people';
 
-import { delay } from './delay';
 import { notEnded, startedAfter, toGames } from './games';
 import { GAME_COLUMNS, PROFILE_COLUMNS, toProfile, type GameRow, type ProfileRow } from './rows';
 import type { Game, MySport, Profile } from './types';
 
 // Postgres's code for text that isn't a valid id, like a mistyped link.
 const INVALID_ID = '22P02';
-const ONBOARDING_KEY = 'mock:onboarding_completed_at';
 
-// Called when the last onboarding step is done. Stamps the current time.
+// Called when the last onboarding step is done. Stamps profiles.onboarding_completed_at with the
+// current time, so this account skips onboarding on every phone from now on.
 export async function finishOnboarding(): Promise<void> {
-  await AsyncStorage.setItem(ONBOARDING_KEY, new Date().toISOString());
+  const me = await getUserId();
+  if (!me) throw new Error('Not signed in');
+  const { error } = await supabase
+    .from('profiles')
+    .update({ onboarding_completed_at: new Date().toISOString() })
+    .eq('id', me);
+  if (error) throw new Error(error.message);
 }
 
-// True once finishOnboarding() has run.
+// True once finishOnboarding() has run for this account (on any phone).
 export async function hasFinishedOnboarding(): Promise<boolean> {
-  const completedAt = await AsyncStorage.getItem(ONBOARDING_KEY);
-  return completedAt !== null;
+  const me = await getUserId();
+  if (!me) return false;
+  const { data, error } = await supabase.from('profiles').select('onboarding_completed_at').eq('id', me).maybeSingle();
+  if (error) throw new Error(error.message);
+  const row = data as { onboarding_completed_at: string | null } | null;
+  return row !== null && row.onboarding_completed_at !== null;
 }
 
 // The campus picked in onboarding, or null if not picked yet (or nobody is signed in).
@@ -67,10 +73,15 @@ export async function saveSports(list: MySport[]): Promise<void> {
   if (error) throw new Error(error.message);
 }
 
-// The signed-in user's profile. W3-08 reads it from the profiles table by the Supabase user id.
+// The signed-in user's profile: name and photo (from Google or Apple at sign-up) and campus.
+// The row is created at sign-up by a database trigger (PR #80), so a missing row is an error.
 export async function getProfile(): Promise<Profile> {
-  await delay();
-  return ME;
+  const me = await getUserId();
+  if (!me) throw new Error('Not signed in');
+  const { data, error } = await supabase.from('profiles').select(PROFILE_COLUMNS).eq('id', me).maybeSingle();
+  if (error) throw new Error(error.message);
+  if (!data) throw new Error('Profile not found');
+  return toProfile(data as ProfileRow);
 }
 
 // Another player's profile, from Supabase. null if nobody has this id (or their account was deleted).
