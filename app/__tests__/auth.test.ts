@@ -1,15 +1,26 @@
+import * as AppleAuthentication from 'expo-apple-authentication';
 import * as WebBrowser from 'expo-web-browser';
+import { Platform } from 'react-native';
 
-import { getSession, onAuthChange, signIn, signOut } from '@/lib/auth';
+import { canSignInWithApple, getSession, onAuthChange, signIn, signInWithApple, signOut } from '@/lib/auth';
 import { supabase } from '@/lib/supabase';
 
 jest.mock('expo-linking', () => ({ createURL: () => 'pantherplay://auth/callback' }));
 jest.mock('expo-web-browser', () => ({ openAuthSessionAsync: jest.fn() }));
+// A stand-in for Apple's sign-in sheet, so tests never open the real one.
+jest.mock('expo-apple-authentication', () => ({
+  signInAsync: jest.fn(),
+  formatFullName: (name: { givenName: string | null; familyName: string | null }) =>
+    [name.givenName, name.familyName].filter(Boolean).join(' '),
+  AppleAuthenticationScope: { FULL_NAME: 0, EMAIL: 1 },
+}));
 jest.mock('@/lib/supabase', () => ({
   supabase: {
     auth: {
       signInWithOAuth: jest.fn(),
       setSession: jest.fn(),
+      signInWithIdToken: jest.fn(),
+      updateUser: jest.fn(),
       signOut: jest.fn(),
       getSession: jest.fn(),
       onAuthStateChange: jest.fn(),
@@ -96,4 +107,58 @@ test('onAuthChange passes each new session to the callback and can stop listenin
 
   stop();
   expect(unsubscribe).toHaveBeenCalled();
+});
+
+describe('Sign in with Apple', () => {
+  const appleSheet = AppleAuthentication.signInAsync as jest.Mock;
+  const signInWithIdToken = supabase.auth.signInWithIdToken as jest.Mock;
+  const updateUser = supabase.auth.updateUser as jest.Mock;
+
+  beforeEach(() => {
+    signInWithIdToken.mockResolvedValue({ error: null });
+    updateUser.mockResolvedValue({ error: null });
+  });
+
+  test('hands Apple\'s token to Supabase and saves the name Apple shares the first time', async () => {
+    appleSheet.mockResolvedValue({ identityToken: 'apple-token', fullName: { givenName: 'Ana', familyName: 'Lopez' } });
+    expect(await signInWithApple()).toEqual({ status: 'signed-in' });
+    expect(appleSheet).toHaveBeenCalledWith({ requestedScopes: [0, 1] });
+    expect(signInWithIdToken).toHaveBeenCalledWith({ provider: 'apple', token: 'apple-token' });
+    expect(updateUser).toHaveBeenCalledWith({ data: { full_name: 'Ana Lopez' } });
+  });
+
+  test('does not touch the name when Apple sends none (every sign-in after the first)', async () => {
+    appleSheet.mockResolvedValue({ identityToken: 'apple-token', fullName: { givenName: null, familyName: null } });
+    expect(await signInWithApple()).toEqual({ status: 'signed-in' });
+    expect(updateUser).not.toHaveBeenCalled();
+  });
+
+  test('closing Apple\'s sheet is a cancel, not an error', async () => {
+    appleSheet.mockRejectedValue(Object.assign(new Error('canceled'), { code: 'ERR_REQUEST_CANCELED' }));
+    expect(await signInWithApple()).toEqual({ status: 'cancelled' });
+    expect(signInWithIdToken).not.toHaveBeenCalled();
+  });
+
+  test('a missing token or a Supabase error is an error', async () => {
+    appleSheet.mockResolvedValue({ identityToken: null, fullName: null });
+    expect(await signInWithApple()).toEqual({ status: 'error', message: 'Sign-in failed.' });
+
+    appleSheet.mockResolvedValue({ identityToken: 'apple-token', fullName: null });
+    signInWithIdToken.mockResolvedValue({ error: { message: 'Provider is not enabled' } });
+    expect(await signInWithApple()).toEqual({ status: 'error', message: 'Provider is not enabled' });
+  });
+
+  test('never throws, even when Apple\'s sheet fails', async () => {
+    appleSheet.mockRejectedValue(new Error('not available'));
+    expect(await signInWithApple()).toEqual({ status: 'error', message: 'not available' });
+  });
+
+  test('is offered on iOS only', () => {
+    const original = Platform.OS;
+    Platform.OS = 'ios';
+    expect(canSignInWithApple()).toBe(true);
+    Platform.OS = 'android';
+    expect(canSignInWithApple()).toBe(false);
+    Platform.OS = original;
+  });
 });

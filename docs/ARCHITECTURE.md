@@ -39,20 +39,22 @@ flowchart LR
     Auth["Auth<br/>who is signed in"]
     DB[("Postgres database<br/>games, players, profiles")]
     RT["Realtime<br/>live spot counts"]
-    Fn["Edge Functions<br/>send push notifications"]
+    Fn["Edge Functions<br/>send-push"]
   end
 
   Google["Google sign-in<br/>(used for now)"]
+  Apple["Sign in with Apple<br/>(iPhone only)"]
   FIU["FIU official login<br/>(later — PantherSoft)"]
   Push["Expo Push service"]
 
   App -- "1. sign in" --> Auth
   Auth -- "checks identity" --> Google
+  Auth -- "checks identity" --> Apple
   Auth -.-> FIU
   App -- "2. read & write data" --> DB
   DB -- "3. changes stream back" --> RT
   RT -- "live updates" --> App
-  DB -- "4. something important happened" --> Fn
+  DB -- "4. new notification row<br/>(database webhook)" --> Fn
   Fn --> Push
   Push -- "notification" --> App
 
@@ -66,11 +68,11 @@ flowchart LR
 |---|---|
 | **PantherPlay app** | Everything the student sees and taps. It shows screens, sends what the student does (join, post, leave) to Supabase, and redraws when data changes. It does **not** decide rules like "is this game full?". |
 | **Auth** | Knowing who is signed in. After sign-in it gives the app a token (a digital ID card) that's attached to every request, so the database knows who is asking. |
-| **Google sign-in** | Proving the person owns their Google account. Used until FIU login is ready. Setup: [google-sign-in-setup.md](./google-sign-in-setup.md). |
+| **Google sign-in** | Proving the person owns their Google account. Used until FIU login is ready. Setup: [google-sign-in-setup.md](./google-sign-in-setup.md). Sign in with Apple sits next to it on iPhone (decided Nov 25); setup: [apple-sign-in-setup.md](./apple-sign-in-setup.md). |
 | **FIU official login** | Replacing Google later. PantherSoft builds this; we don't. |
 | **Postgres database** | Storing everything that must survive closing the app: profiles, games, who joined. It also **enforces the rules**: Row Level Security (RLS) decides who may read or change each row, and functions like `join_game` stop overbooking. |
 | **Realtime** | Watching the database and pushing changes to every phone with that screen open, so spot counts update without a refresh. Discover and Map listen to `games` (`onGamesChange`) and an open Game detail listens to its `game_players` rows (`onGamePlayersChange`), both in `src/api/games.ts`; each screen stops listening when it closes. |
-| **Edge Functions** | Small pieces of server code that Supabase runs for us. Here they decide who should get a notification and hand it to Expo Push. They hold the secret service key, which must never be in the app. |
+| **Edge Functions** | Small pieces of server code that Supabase runs for us, in `supabase/functions/` (they run on Deno, not Node). `send-push` runs whenever a row is added to `notifications`: a database webhook calls it, it skips types that stay in-app only, looks up the user's `push_tokens`, sends through Expo Push and deletes tokens Expo reports as no longer registered. Only `game-cancelled`, `game-changed`, `waitlist-opened` and `game-confirmed` are pushed, the events that change whether, when or where you show up. Its secrets (the service key, the webhook secret, an optional Expo access token) live in the function's settings, never in the app or the repo. Setup: [push-notifications-setup.md](./push-notifications-setup.md). |
 | **Expo Push service** | Delivering the notification through Apple and Google so it shows on the lock screen, even when the app is closed. |
 
 ---
@@ -79,7 +81,7 @@ flowchart LR
 
 **What it shows:** the folders in the repo and what goes in each.
 
-**Key idea:** the phone app lives in `app/`. Screens go in `app/src/app/`, reusable pieces in the rest of `app/src/`, and database changes in `supabase/`. **Only `app/src/lib/auth.ts` knows we use Google**, so swapping in FIU login later touches one file.
+**Key idea:** the phone app lives in `app/`. Screens go in `app/src/app/`, reusable pieces in the rest of `app/src/`, and database changes in `supabase/`. **Only `app/src/lib/auth.ts` knows we use Google and Apple**, so swapping in FIU login later touches one file.
 
 ```mermaid
 flowchart TB
@@ -102,7 +104,7 @@ flowchart TB
   Screens --> Tabs["(tabs)/<br/>discover, profile, …"]
   Screens --> Pushed["game/[id] · game/create · player/[id] · notifications · settings"]
 
-  Lib --> AuthTs["auth.ts ⚠️<br/>the ONLY file that knows<br/>about Google sign-in"]
+  Lib --> AuthTs["auth.ts ⚠️<br/>the ONLY file that knows<br/>about Google and Apple sign-in"]
   Lib --> Client["supabase.ts<br/>database client"]
 
   Supa --> Mig["migrations/<br/>every database change, in order"]
@@ -128,10 +130,10 @@ flowchart TB
 | `app/src/components/` | Reusable building blocks that many screens share (buttons, chips, icons). Named like the Figma components, so designers and developers mean the same thing. |
 | `app/src/features/` | Pieces that belong to one screen only, too specific to be shared components. `create-game/` holds the Create game form: its sections, pickers, validation rules and form state. `home/` holds Discover's header, search bar, date chips, game card and filter modal. `game-detail/` holds the sections of the Game detail page. `profile/` holds the Profile tab's sections. |
 | `app/src/theme/` | Colors, fonts, text styles, spacing and radius in one place, mirroring the Figma variables. Components use names like `colors.text.primary` (Figma `text/primary`), never hex codes, so changing a color is one edit. Light mode only. |
-| `app/src/api/` | The only place screens get data from: small functions like `getGames(campus)`, `getLocations(campus)` or `joinGame(id)`, so screens never write database queries themselves. `types.ts` holds the contract types (`Game`, `Player`, `Location`, `Profile`), which mirror the database tables. `joinGame`, `leaveGame` and `createGame` call the database functions `join_game`, `leave_game` and `create_game` (W5-03), so the database decides Joined or Waitlisted and `createGame` returns the new game's id. `getGames`, `getGame` and `getLocations` read Supabase (W5-02): one request brings a game with its host, sport, location and players, and `rows.ts` turns the snake_case rows into the contract types. `spotsFilled` and `myStatus` are still counted from the players, using the signed-in user's id from `lib/auth.ts`. Profile and notifications still return mock data after a short fake delay. |
+| `app/src/api/` | The only place screens get data from: small functions like `getGames(campus)`, `getLocations(campus)` or `joinGame(id)`, so screens never write database queries themselves. `types.ts` holds the contract types (`Game`, `Player`, `Location`, `Profile`), which mirror the database tables. `joinGame`, `leaveGame` and `createGame` call the database functions `join_game`, `leave_game` and `create_game` (W5-03), so the database decides Joined or Waitlisted and `createGame` returns the new game's id. `getGames`, `getGame` and `getLocations` read Supabase (W5-02): one request brings a game with its host, sport, location and players, and `rows.ts` turns the snake_case rows into the contract types. `spotsFilled` and `myStatus` are still counted from the players, using the signed-in user's id from `lib/auth.ts`. Onboarding saves through `saveCampus(campus)` (the `profiles.campus` column) and `saveSports(list)` (rows of `profile_sports`), and reads them back with `getMyCampus()` and `getMySports()` so going back keeps earlier choices. `confirmAdult()` / `hasConfirmedAdult()` write and read `profiles.adult_confirmed_at` (W8-14). `getProfile()` reads the signed-in user's `profiles` row, and `finishOnboarding()` / `hasFinishedOnboarding()` write and read `profiles.onboarding_completed_at`, so onboarding is remembered per account, not per phone (W8-31). Notifications still return mock data after a short fake delay; so does `savePushToken(token, platform)`, which W8-04 turns into an upsert into `push_tokens`. `lib/push-token.ts` (`registerPushToken()`) gets the phone's Expo push token after the onboarding prompt and on every app start, only if notifications are already allowed (it never asks), and needs the EAS `projectId` in `app.json`. |
 | `app/src/mock/` | Mock data for tests, and for the profile and notifications functions that aren't on Supabase yet. Screens never import it. `games-api.ts` and `locations-api.ts` are stand-ins for `src/api/games.ts` and `src/api/locations.ts` over the mock data, so screen tests run without a database (`jest.mock('@/api/games', () => require('@/mock/games-api'))`). `games.ts` is the one mock games set, deliberately hostile (full, cancelled, starting in 5 minutes, very long names, 47 games on one day) so screens are tested against bad cases. |
 | `app/src/lib/supabase.ts` | Creating the one Supabase connection the whole app shares. |
-| `app/src/lib/auth.ts` | Sign in, sign out, and "who is signed in?". The only file that knows Google is involved. |
+| `app/src/lib/auth.ts` | Sign in (Google, or Apple on iPhone), sign out, and "who is signed in?". The only file that knows Google and Apple are involved. |
 | `supabase/migrations/` | Every database change, as numbered SQL files applied in order. Like git history for the database: anyone can rebuild the same database from scratch. |
 | `supabase/seed.sql` | The starter rows the app needs: the sport list and the campus locations. |
 | `docs/` | This file and ADRs (one short file per big decision, explaining why). |
@@ -147,12 +149,13 @@ flowchart TB
 
 ```mermaid
 flowchart TD
-  Welcome["Welcome<br/>Get started"] --> SignIn["Sign in<br/>Continue with Google"]
+  Welcome["Welcome<br/>Get started"] --> SignIn["Sign in<br/>Continue with Google<br/>or Apple (iPhone)"]
   SignIn --> Gate{"New user?"}
-  Gate -- yes --> Campus["Onboarding 1<br/>Which campus?"]
-  Campus --> Sports["Onboarding 2<br/>Sports & level"]
-  Sports --> Photo["Onboarding 3<br/>Photo"]
-  Photo --> Notif["Onboarding 4<br/>Allow notifications"]
+  Gate -- yes --> Adult["Onboarding 1<br/>I'm 18 or older"]
+  Adult --> Campus["Onboarding 2<br/>Which campus?"]
+  Campus --> Sports["Onboarding 3<br/>Sports & level"]
+  Sports --> Photo["Onboarding 4<br/>Photo"]
+  Photo --> Notif["Onboarding 5<br/>Allow notifications"]
   Notif --> Discover
   Gate -- no --> Discover
 
@@ -179,7 +182,7 @@ flowchart TD
   Profile -- "tap one of My Games" --> Detail
 
   classDef pending stroke-dasharray: 5 5,color:#5A6B7D
-  class NotifPrefs,Campus,Sports,Photo,Notif pending
+  class NotifPrefs pending
 ```
 
 **What each screen does:**
@@ -187,9 +190,9 @@ flowchart TD
 | Screen | In charge of |
 |---|---|
 | **Welcome** | The first thing a new person sees: what the app is, and a "Get started" button. |
-| **Sign in** | One "Continue with Google" button for both new and returning users. |
+| **Sign in** | "Continue with Google" for both new and returning users, with "Continue with Apple" under it on iPhone only. |
 | **New user?** | Not a screen. The app checks whether this person has finished onboarding (see diagram 4). |
-| **Onboarding 1–4** | One-time setup for new users: home campus, sports and skill level, profile photo, and permission to send notifications (explained first, then the phone's own prompt). |
+| **Onboarding 1–5** | One-time setup for new users: confirming they're 18 or older (a checkbox, no birthdate; Felipe decided Nov 25), home campus, sports and skill level, profile photo, and permission to send notifications (explained first, then the phone's own prompt). |
 | **Discover / Home** | The live board: a campus toggle (MMC/BBC, same as Map), date chips, a search bar and game cards with a spots bar, plus a filter modal for sport, time and skill level. Shows a spinner while games load, an error with Try again if they fail, and "No games today" when there are none. The main screen. Games come from `getGames(campus)` in `src/api/`, read from Supabase, leaving out cancelled, completed and ended games; search and the date chips don't filter yet. |
 | **Map** | A native map (`react-native-maps`, see [ADR 0004](./adr/0004-map-tab.md)) with a pin for each game at the chosen campus (MMC/BBC), plus a bottom sheet listing them by start time. It loads the same `getGames(campus)` as Discover, so both tabs show the same games, with a spinner while loading and an error with Try again. Tap a game once to highlight it and center the map; tap again to open Game detail. |
 | **＋** | The center tab button. Opens Create game. |
@@ -217,7 +220,10 @@ flowchart TD
 flowchart TD
   Open(["App opens"]) --> HasSession{"Is someone<br/>signed in?"}
   HasSession -- no --> Welcome["Show Welcome → Sign in"]
-  HasSession -- yes --> Onboarded{"Has this person<br/>finished onboarding?<br/>(profiles.onboarding_completed_at)"}
+  HasSession -- yes --> Adult{"Has this person<br/>confirmed 18+?<br/>(profiles.adult_confirmed_at)"}
+  Adult -- no --> AdultStep["Show the 18+ step"]
+  AdultStep --> Onboarding
+  Adult -- yes --> Onboarded{"Has this person<br/>finished onboarding?<br/>(profiles.onboarding_completed_at)"}
   Onboarded -- no --> Onboarding["Show onboarding"]
   Onboarded -- yes --> Home["Show Discover"]
   Onboarding -- "finish last step" --> Save["Save profile<br/>set onboarding_completed_at"]
@@ -229,6 +235,7 @@ flowchart TD
 | Step | In charge of |
 |---|---|
 | **Is someone signed in?** | Checking the phone for a saved session (the token from Auth). No session means the person is new or signed out. |
+| **Has this person confirmed 18+?** | Looking at `adult_confirmed_at` in their `profiles` row. Nobody reaches the tabs without it, even if they finished onboarding before the 18+ step existed. If the check fails (offline), the app shows Try again instead of letting them in. |
 | **Has this person finished onboarding?** | Looking at their row in `profiles`. If `onboarding_completed_at` is empty, they signed in but haven't finished setup. |
 | **Save profile** | Saving the onboarding answers and stamping `onboarding_completed_at` with the current time, so the next launch goes straight to Discover. |
 
@@ -263,6 +270,7 @@ erDiagram
     text display_name "required"
     text avatar_url
     campus home_campus "MMC or BBC"
+    timestamptz adult_confirmed_at "when they confirmed 18+"
     timestamptz onboarding_completed_at
   }
   GAMES {
@@ -332,7 +340,7 @@ erDiagram
 
 | Table | In charge of |
 |---|---|
-| **PROFILES** | One row per student: name, photo, home campus. Its `id` is the same as their sign-in id, which links the login to the profile. |
+| **PROFILES** | One row per student: name, photo, home campus, and when they confirmed they're 18+ (no birthdate). Its `id` is the same as their sign-in id, which links the login to the profile. |
 | **GAMES** | One row per posted game: who hosts, sport, place, start time, length, player limits and status. |
 | **GAME_PLAYERS** | Who is in which game: one row per person per game, with their status (joined, waitlisted, left). Counting the `joined` rows gives the spots filled. |
 | **LOCATIONS** | The fixed list of campus spots (Panther Field, Rec Center…), their photos and their coordinates. Games pick one instead of typing an address; the Map tab uses the coordinates to drop a pin per game (see [ADR 0004](./adr/0004-map-tab.md)). |

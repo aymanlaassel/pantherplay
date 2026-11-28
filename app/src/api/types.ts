@@ -11,6 +11,9 @@ export type SportCode = 'basketball' | 'soccer' | 'volleyball' | 'tennis' | 'pic
 export type Sport = { code: SportCode; name: string };
 export type JoinResult = 'joined' | 'waitlisted';
 
+// A row of profile_sports: one sport the signed-in user plays, and their level in it.
+export type MySport = { sport: SportCode; level: SkillLevel };
+
 export type Profile = {
   id: string;
   fullName: string;

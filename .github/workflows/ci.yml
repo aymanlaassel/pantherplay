@@ -43,3 +43,19 @@ jobs:
       - run: supabase start -x gotrue,realtime,storage-api,imgproxy,kong,mailpit,postgrest,postgres-meta,studio,edge-runtime,logflare,vector,supavisor
       - run: supabase db reset
       - run: supabase test db
+
+  # Type-checks the send-push Edge Function and runs its tests. Edge Functions run on Deno, not Node,
+  # so this is separate from the app job. Runs inside the function's folder so Deno finds its deno.json.
+  functions:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: supabase/functions/send-push
+    steps:
+      - uses: actions/checkout@v4
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - run: deno check index.ts
+      - run: deno test

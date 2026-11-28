@@ -1,11 +1,12 @@
 import { Image } from 'expo-image';
 import { router } from 'expo-router';
+import { SymbolView } from 'expo-symbols';
 import { useState } from 'react';
 import { Linking, Pressable, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { signIn } from '@/lib/auth';
-import { colors, fonts, google, radius, space, typography } from '@/theme';
+import { canSignInWithApple, signIn, signInWithApple, type SignInResult } from '@/lib/auth';
+import { apple, colors, fonts, google, radius, space, typography } from '@/theme';
 
 // TODO: replace with the real pages once they exist.
 export const TERMS_URL = 'https://example.com/terms';
@@ -15,15 +16,16 @@ export default function SignInScreen() {
   const [busy, setBusy] = useState(false);
   const [failed, setFailed] = useState(false);
 
-  const onContinue = async () => {
+  // Both buttons work the same way; only the sign-in function differs.
+  const continueWith = async (signInWith: () => Promise<SignInResult>) => {
     setBusy(true);
-    setFailed(false)
-    const result = await signIn();
+    setFailed(false);
+    const result = await signInWith();
     setBusy(false);
     if (result.status === 'error') {
-      setFailed(true)
+      setFailed(true);
     }
-  }
+  };
 
   return (
     <SafeAreaView style={styles.screen}>
@@ -42,7 +44,7 @@ export default function SignInScreen() {
       </View>
 
       <Pressable
-        onPress={onContinue}
+        onPress={() => continueWith(signIn)}
         disabled={busy}
         accessibilityRole="button"
         accessibilityState={{ disabled: busy }}
@@ -50,6 +52,19 @@ export default function SignInScreen() {
         <Image source={require('@/assets/images/icons/google-g.svg')} style={styles.googleLogo} />
         <Text style={styles.googleLabel}>Continue with Google</Text>
       </Pressable>
+
+      {/* Apple's rules: black button, Apple's own logo (the system symbol), same size as Google's. */}
+      {canSignInWithApple() ? (
+        <Pressable
+          onPress={() => continueWith(signInWithApple)}
+          disabled={busy}
+          accessibilityRole="button"
+          accessibilityState={{ disabled: busy }}
+          style={({ pressed }) => [styles.apple, (pressed || busy) && styles.pressed]}>
+          <SymbolView name="apple.logo" size={20} tintColor={apple.text} style={styles.appleLogo} />
+          <Text style={styles.appleLabel}>Continue with Apple</Text>
+        </Pressable>
+      ) : null}
 
       {failed ? (
         <Text style={styles.error} accessibilityRole="alert">
@@ -94,6 +109,18 @@ const styles = StyleSheet.create({
   },
   googleLogo: { width: 20, height: 20 },
   googleLabel: { ...typography.Button, color: google.text },
+  apple: {
+    height: 48,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: space[12],
+    marginTop: space[12],
+    borderRadius: radius.pill,
+    backgroundColor: apple.fill,
+  },
+  appleLogo: { width: 20, height: 20 },
+  appleLabel: { ...typography.Button, color: apple.text },
   legal: { ...typography.Caption, fontFamily: fonts.interRegular, lineHeight: 16, color: colors.text.muted, textAlign: 'center', marginTop: space[12] },
   link: { fontFamily: fonts.interSemiBold, color: colors.text.primary },
   error: { ...typography['Body/Regular'], color: colors.text.error, textAlign: 'center', marginTop: space[12] },

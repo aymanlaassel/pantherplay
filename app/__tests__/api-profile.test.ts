@@ -1,4 +1,18 @@
-import { getGamesPlayed, getMyGames, getMyGamesPlayed, getPlayer } from '@/api/profile';
+import {
+  confirmAdult,
+  finishOnboarding,
+  getGamesPlayed,
+  getMyCampus,
+  getMyGames,
+  getMyGamesPlayed,
+  getMySports,
+  getPlayer,
+  getProfile,
+  hasConfirmedAdult,
+  hasFinishedOnboarding,
+  saveCampus,
+  saveSports,
+} from '@/api/profile';
 import type { GameRow } from '@/api/rows';
 import { getUserId } from '@/lib/auth';
 import { supabase } from '@/lib/supabase';
@@ -15,9 +29,9 @@ function queue(result: Result) {
     then: (onDone: (r: Result) => unknown, onFail: (e: unknown) => unknown) => Promise.resolve(result).then(onDone, onFail),
     maybeSingle: jest.fn(async () => result),
   };
-  for (const name of ['select', 'eq', 'neq', 'lt', 'gt', 'or', 'in', 'order']) query[name] = jest.fn(() => query);
+  for (const name of ['select', 'eq', 'neq', 'lt', 'gt', 'or', 'in', 'order', 'update', 'delete', 'insert']) query[name] = jest.fn(() => query);
   from.mockReturnValueOnce(query);
-  return query as Record<'select' | 'eq' | 'neq' | 'lt' | 'gt' | 'or' | 'in' | 'order' | 'maybeSingle', jest.Mock>;
+  return query as Record<'select' | 'eq' | 'neq' | 'lt' | 'gt' | 'or' | 'in' | 'order' | 'update' | 'delete' | 'insert' | 'maybeSingle', jest.Mock>;
 }
 
 beforeEach(() => {
@@ -133,5 +147,138 @@ describe('getMyGames', () => {
     queue({ data: [], error: null });
     queue({ data: null, error: { message: 'JWT expired' } });
     await expect(getMyGames(now)).rejects.toThrow('JWT expired');
+  });
+});
+
+describe('onboarding: campus', () => {
+  test('saveCampus writes the campus on my profile row', async () => {
+    const query = queue({ data: null, error: null });
+    await saveCampus('BBC');
+    expect(from).toHaveBeenCalledWith('profiles');
+    expect(query.update).toHaveBeenCalledWith({ campus: 'BBC' });
+    expect(query.eq).toHaveBeenCalledWith('id', 'me');
+  });
+
+  test('saveCampus throws when the database says no', async () => {
+    queue({ data: null, error: { message: 'permission denied' } });
+    await expect(saveCampus('MMC')).rejects.toThrow('permission denied');
+  });
+
+  test('getMyCampus reads my campus, and is null when nobody is signed in', async () => {
+    queue({ data: { campus: 'MMC' }, error: null });
+    expect(await getMyCampus()).toBe('MMC');
+    jest.mocked(getUserId).mockResolvedValue(null);
+    expect(await getMyCampus()).toBeNull();
+  });
+});
+
+describe('onboarding: sports', () => {
+  test('saveSports removes my old rows, then adds one row per sport', async () => {
+    const remove = queue({ data: null, error: null });
+    const add = queue({ data: null, error: null });
+    await saveSports([
+      { sport: 'soccer', level: 'intermediate' },
+      { sport: 'tennis', level: 'beginner' },
+    ]);
+    expect(from).toHaveBeenNthCalledWith(1, 'profile_sports');
+    expect(remove.delete).toHaveBeenCalled();
+    expect(remove.eq).toHaveBeenCalledWith('user_id', 'me');
+    expect(add.insert).toHaveBeenCalledWith([
+      { user_id: 'me', sport: 'soccer', level: 'intermediate' },
+      { user_id: 'me', sport: 'tennis', level: 'beginner' },
+    ]);
+  });
+
+  test('saveSports stops if removing the old rows fails', async () => {
+    queue({ data: null, error: { message: 'Network request failed' } });
+    await expect(saveSports([{ sport: 'soccer', level: 'advanced' }])).rejects.toThrow('Network request failed');
+    expect(from).toHaveBeenCalledTimes(1);
+  });
+
+  test('saveSports throws when adding the new rows fails', async () => {
+    queue({ data: null, error: null });
+    queue({ data: null, error: { message: 'violates foreign key' } });
+    await expect(saveSports([{ sport: 'soccer', level: 'advanced' }])).rejects.toThrow('violates foreign key');
+  });
+
+  test('getMySports reads my rows of profile_sports', async () => {
+    const query = queue({ data: [{ sport: 'volleyball', level: 'beginner' }], error: null });
+    expect(await getMySports()).toEqual([{ sport: 'volleyball', level: 'beginner' }]);
+    expect(from).toHaveBeenCalledWith('profile_sports');
+    expect(query.eq).toHaveBeenCalledWith('user_id', 'me');
+  });
+});
+
+describe('getProfile', () => {
+  test('reads the signed-in user\'s row: real name, photo and campus', async () => {
+    const query = queue({
+      data: { id: 'me', display_name: 'Ana Lopez', avatar_url: 'https://example.com/ana.png', campus: 'MMC' },
+      error: null,
+    });
+    expect(await getProfile()).toEqual({ id: 'me', fullName: 'Ana Lopez', avatarUrl: 'https://example.com/ana.png', campus: 'MMC' });
+    expect(from).toHaveBeenCalledWith('profiles');
+    expect(query.eq).toHaveBeenCalledWith('id', 'me');
+  });
+
+  test('throws when the row is missing, on an error, or when nobody is signed in', async () => {
+    queue({ data: null, error: null });
+    await expect(getProfile()).rejects.toThrow('Profile not found');
+    queue({ data: null, error: { message: 'Network request failed' } });
+    await expect(getProfile()).rejects.toThrow('Network request failed');
+    jest.mocked(getUserId).mockResolvedValue(null);
+    await expect(getProfile()).rejects.toThrow('Not signed in');
+  });
+});
+
+describe('onboarding status', () => {
+  test('finishOnboarding stamps onboarding_completed_at on my row', async () => {
+    const query = queue({ data: null, error: null });
+    await finishOnboarding();
+    expect(from).toHaveBeenCalledWith('profiles');
+    expect(query.update).toHaveBeenCalledWith({ onboarding_completed_at: expect.any(String) });
+    expect(query.eq).toHaveBeenCalledWith('id', 'me');
+  });
+
+  test('finishOnboarding throws when the database says no', async () => {
+    queue({ data: null, error: { message: 'permission denied' } });
+    await expect(finishOnboarding()).rejects.toThrow('permission denied');
+  });
+
+  test('hasFinishedOnboarding: new user false, returning user true', async () => {
+    queue({ data: { onboarding_completed_at: null }, error: null });
+    expect(await hasFinishedOnboarding()).toBe(false);
+    queue({ data: { onboarding_completed_at: '2026-11-20T18:00:00Z' }, error: null });
+    expect(await hasFinishedOnboarding()).toBe(true);
+  });
+
+  test('hasFinishedOnboarding is false when signed out, and throws on an error', async () => {
+    queue({ data: null, error: { message: 'Network request failed' } });
+    await expect(hasFinishedOnboarding()).rejects.toThrow('Network request failed');
+    jest.mocked(getUserId).mockResolvedValue(null);
+    expect(await hasFinishedOnboarding()).toBe(false);
+  });
+});
+
+describe('18+ confirmation', () => {
+  test('confirmAdult stamps adult_confirmed_at on my row', async () => {
+    const query = queue({ data: null, error: null });
+    await confirmAdult();
+    expect(from).toHaveBeenCalledWith('profiles');
+    expect(query.update).toHaveBeenCalledWith({ adult_confirmed_at: expect.any(String) });
+    expect(query.eq).toHaveBeenCalledWith('id', 'me');
+  });
+
+  test('confirmAdult throws when the database says no, or nobody is signed in', async () => {
+    queue({ data: null, error: { message: 'permission denied' } });
+    await expect(confirmAdult()).rejects.toThrow('permission denied');
+    jest.mocked(getUserId).mockResolvedValue(null);
+    await expect(confirmAdult()).rejects.toThrow('Not signed in');
+  });
+
+  test('hasConfirmedAdult: false until confirmed, then true', async () => {
+    queue({ data: { adult_confirmed_at: null }, error: null });
+    expect(await hasConfirmedAdult()).toBe(false);
+    queue({ data: { adult_confirmed_at: '2026-11-20T17:00:00Z' }, error: null });
+    expect(await hasConfirmedAdult()).toBe(true);
   });
 });
