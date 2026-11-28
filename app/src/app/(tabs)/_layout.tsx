@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react';
 
 import { hasFinishedOnboarding } from '@/api/profile';
 import { TabBar } from '@/components/tab-bar';
+import { registerPushToken } from '@/lib/push-token';
 
 export default function TabLayout() {
     // null while we check. Someone who hasn't finished onboarding is sent there instead of Discover.
@@ -11,6 +12,14 @@ export default function TabLayout() {
     useEffect(() => {
         hasFinishedOnboarding().then(setOnboarded);
     }, []);
+
+    // On every start, save this phone's push token again in case it changed.
+    // Only if they already allowed notifications: this never asks. A failure just waits for the next start.
+    useEffect(() => {
+        if (onboarded) {
+            registerPushToken().catch(() => {});
+        }
+    }, [onboarded]);
 
     if (onboarded === null) {
         return null;

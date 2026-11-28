@@ -9,6 +9,7 @@ import Svg, { Circle, Path } from 'react-native-svg';
 import { finishOnboarding } from '@/api/profile';
 import { ButtonJoin } from '@/components/button-join';
 import { NotificationLeading } from '@/components/notification-leading';
+import { registerPushToken } from '@/lib/push-token';
 import { colors, radius, space, typography } from '@/theme';
 
 // The progress bar has one dash per onboarding step. This is the last one, so all are filled.
@@ -42,10 +43,12 @@ function BellArt() {
 
 export default function NotificationsOnboardingScreen() {
   // Shows the phone's own "Allow notifications?" prompt. Whatever they pick, we move on.
-  // If the prompt itself fails (some simulators, Expo Go), still finish so nobody gets stuck here.
+  // If they allowed it, this phone's push token is saved (registerPushToken skips it otherwise).
+  // If the prompt or saving fails (some simulators, Expo Go), still finish so nobody gets stuck here.
   const onFinish = async () => {
     try {
       await Notifications.requestPermissionsAsync();
+      await registerPushToken();
     } catch {
       // Ignored on purpose: notifications are optional.
     }

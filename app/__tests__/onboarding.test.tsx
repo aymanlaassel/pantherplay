@@ -7,6 +7,7 @@ import NotificationsOnboardingScreen from '@/app/(onboarding)/enable-notificatio
 import PhotoScreen from '@/app/(onboarding)/photo';
 import TabLayout from '@/app/(tabs)/_layout';
 import { getProviderProfile } from '@/lib/auth';
+import { registerPushToken } from '@/lib/push-token';
 
 jest.mock('@react-native-async-storage/async-storage', () =>
   require('@react-native-async-storage/async-storage/jest/async-storage-mock'),
@@ -24,6 +25,7 @@ jest.mock('expo-router', () => {
 });
 jest.mock('react-native-safe-area-context', () => require('react-native-safe-area-context/jest/mock').default);
 jest.mock('@/lib/auth', () => ({ getProviderProfile: jest.fn() }));
+jest.mock('@/lib/push-token', () => ({ registerPushToken: jest.fn(async () => {}) }));
 
 const mockGetProviderProfile = getProviderProfile as jest.Mock;
 const mockRequestPermissions = Notifications.requestPermissionsAsync as jest.Mock;
@@ -71,12 +73,33 @@ describe('notifications step', () => {
     expect(router.replace).toHaveBeenCalledWith('/');
   });
 
+  test('Finish saves the push token after the prompt (it skips saving if they said no)', async () => {
+    await render(<NotificationsOnboardingScreen />);
+    await act(async () => {
+      fireEvent.press(screen.getByText('Finish'));
+    });
+    expect(registerPushToken).toHaveBeenCalledTimes(1);
+    expect(mockRequestPermissions.mock.invocationCallOrder[0]).toBeLessThan(
+      jest.mocked(registerPushToken).mock.invocationCallOrder[0],
+    );
+  });
+
+  test('a failure saving the token still finishes onboarding', async () => {
+    jest.mocked(registerPushToken).mockRejectedValueOnce(new Error('no project id'));
+    await render(<NotificationsOnboardingScreen />);
+    await act(async () => {
+      fireEvent.press(screen.getByText('Finish'));
+    });
+    expect(router.replace).toHaveBeenCalledWith('/');
+  });
+
   test('Not now finishes onboarding without asking for permission', async () => {
     await render(<NotificationsOnboardingScreen />);
     await act(async () => {
       fireEvent.press(screen.getByText('Not now'));
     });
     expect(mockRequestPermissions).not.toHaveBeenCalled();
+    expect(registerPushToken).not.toHaveBeenCalled();
     expect(await hasFinishedOnboarding()).toBe(true);
     expect(router.replace).toHaveBeenCalledWith('/');
   });
@@ -88,9 +111,16 @@ describe('opening the app', () => {
     expect(await screen.findByText('redirect:/campus')).toBeTruthy();
   });
 
-  test('skips onboarding once it is finished', async () => {
+  test('skips onboarding once it is finished, and saves the push token again', async () => {
     await finishOnboarding();
     await render(<TabLayout />);
     expect(await screen.findByText('tabs')).toBeTruthy();
+    expect(registerPushToken).toHaveBeenCalledTimes(1);
+  });
+
+  test('does not save a push token before onboarding is finished', async () => {
+    await render(<TabLayout />);
+    await screen.findByText('redirect:/campus');
+    expect(registerPushToken).not.toHaveBeenCalled();
   });
 });
