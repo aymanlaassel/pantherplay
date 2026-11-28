@@ -174,7 +174,8 @@ flowchart TD
   DeleteAccount -- "Cancel / placeholder Delete" --> Settings
   Settings -. "later ticket; row is inert" .-> NotifPrefs["Notification preferences<br/>(not implemented)"]
   Notifications -- "tap a notification" --> Detail
-  MyGames["My Games<br/>(pending — no tab slot yet)"] -.-> Detail
+  Profile -- "pinned section" --> MyGames["My Games<br/>(not built yet)"]
+  MyGames -.-> Detail
 
   classDef pending stroke-dasharray: 5 5,color:#5A6B7D
   class NotifPrefs,MyGames,Campus,Sports,Photo,Notif pending
@@ -199,7 +200,7 @@ flowchart TD
 | **Settings** | Opened from the gear on Profile. A mock profile, Account, Preferences, Privacy & Safety, Support, a placeholder Sign out, and Delete account. Terms & Privacy Policy opens a placeholder browser URL. Unfinished rows do nothing. |
 | **Delete account** | Warning and deleted-data list, exact DELETE confirmation, and Cancel. The enabled Delete action only goes back; no data is deleted. |
 | **Notification preferences** | Designed, but implementation is a later ticket. Settings does not navigate here yet. |
-| **My Games** | Games you've joined or host. Pending: it has no tab slot yet. |
+| **My Games** | Games you've joined or host, as a section pinned on Profile (not a tab). Decided, not built yet. |
 
 ---
 

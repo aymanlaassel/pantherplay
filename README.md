@@ -11,21 +11,23 @@ Turn "we need 2 more for 5v5 tonight" group chats into a live board students act
 - **Real-time board**: see what's happening on campus right now
 - **Filters**: location (Rec Center, Panther Field, MMC/BBC courts), skill level, headcount needed
 - **Recurring squads**: build regular groups for weekly runs
-- **Lightweight rep system**: attendance rate + quick post-game ratings to build trust
+- **Games played**: a count on each profile (no reliability score)
 
 ## Planned
-- **FIU-email login** to keep it a trusted, students-only space (pending school authorization)
+- **FIU login** replacing Google sign-in (PantherSoft, after handover)
 
 ## Tech Stack
 | Layer | Tech |
 |---|---|
 | Mobile app | React Native + Expo |
-| Backend | Node.js + Express |
-| Database | Supabase (PostgreSQL, accessed with Prisma) for users, games, RSVPs |
+| Backend | Supabase only (no custom server): Postgres, Row Level Security, Edge Functions |
+| Database | Supabase (PostgreSQL) for users, games, RSVPs; schema changes in `supabase/migrations/` |
 | Auth, real-time sync & notifications | Supabase |
-| Maps & location | Google Maps API or Mapbox |
+| Maps & location | `react-native-maps` with a fixed table of campus spots, no paid map API ([ADR 0004](docs/adr/0004-map-tab.md)) |
 
 ## Getting Started
+
+**New to the project, or taking it over (PantherSoft)?** Start with the [handover guide](docs/HANDOVER.md): running the app, deploying migrations, secrets, accounts and open items.
 
 ### Prerequisites
 - [Node.js](https://nodejs.org) (LTS)
@@ -38,16 +40,7 @@ git clone https://github.com/aymanlaassel/pantherplay
 cd pantherplay
 ```
 
-### Backend
-```bash
-cd server
-npm install
-cp .env.example .env   # fill in your values
-npx prisma migrate dev   # sync your database with the schema
-npm start
-```
-
-### Mobile app (new terminal)
+### Mobile app
 ```bash
 cd app
 npm install
